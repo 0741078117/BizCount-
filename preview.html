@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>BizCount — App Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:#0F1923;color:white;padding:24px 16px 60px;min-height:100vh}
+h1{text-align:center;font-size:2rem;font-weight:900;margin-bottom:4px}
+h1 span{color:#F5A623}
+.tagline{text-align:center;color:#8A95A3;font-size:0.95rem;margin-bottom:32px}
+.screens{display:flex;gap:20px;overflow-x:auto;padding-bottom:16px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.screen{flex-shrink:0;width:280px;background:#1E2530;border-radius:24px;overflow:hidden;scroll-snap-align:start;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.screen-label{text-align:center;padding:8px;background:#252E3D;font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8A95A3}
+.screen-body{padding:0}
+
+/* Mini app mockup styles */
+.m-top{background:#1A7A4A;padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between}
+.m-logo{font-size:1.1rem;font-weight:900;color:white}.m-logo span{color:#F5A623}
+.m-user{background:rgba(255,255,255,0.15);border-radius:12px;padding:3px 8px;font-size:0.6rem;font-weight:700;color:white}
+
+.m-hero{background:linear-gradient(135deg,#1A7A4A,#0F5230);margin:10px;border-radius:12px;padding:14px 12px;color:white}
+.m-hero .ml{font-size:0.55rem;opacity:0.8;text-transform:uppercase;letter-spacing:0.5px}
+.m-hero .mn{font-size:1.6rem;font-weight:900;letter-spacing:-0.5px}
+.m-hero .ms{font-size:0.55rem;opacity:0.7}
+.m-hero .mb{display:inline-block;background:rgba(255,255,255,0.15);border-radius:10px;padding:2px 8px;font-size:0.55rem;font-weight:700;margin-top:6px}
+
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 10px 10px}
+.m-stat{background:white;border-radius:8px;padding:10px 8px;border-left:3px solid #1A7A4A}
+.m-stat.red{border-color:#E03B3B}.m-stat.gold{border-color:#F5A623}.m-stat.blue{border-color:#1B6CA8}
+.m-stat .sl{font-size:0.52rem;font-weight:800;color:#8A95A3;text-transform:uppercase;margin-bottom:3px}
+.m-stat .sv{font-size:0.88rem;font-weight:900;color:#1A1D23}
+.m-stat.red .sv{color:#E03B3B}.m-stat.gold .sv{color:#F5A623}.m-stat.blue .sv{color:#1B6CA8}
+
+.m-warn{background:#FFF3DC;border:1.5px solid #F5A623;border-radius:8px;margin:0 10px 8px;padding:8px 10px;display:flex;gap:6px;align-items:flex-start}
+.m-warn span{font-size:0.7rem;color:#8A5A00;font-weight:600}
+
+.m-card{background:white;border-radius:10px;margin:0 10px 8px;padding:10px 12px}
+.m-card-title{font-size:0.55rem;font-weight:800;text-transform:uppercase;color:#8A95A3;letter-spacing:0.5px;margin-bottom:8px}
+
+.m-donotspend{background:#FDEAEA;border:2px solid #E03B3B;border-radius:10px;margin:0 10px 8px;padding:10px 12px}
+.m-donotspend .dt{font-size:0.55rem;font-weight:800;text-transform:uppercase;color:#E03B3B}
+.m-donotspend .dn{font-size:1.2rem;font-weight:900;color:#E03B3B}
+
+.m-prog-wrap{margin-bottom:6px}
+.m-prog-labels{display:flex;justify-content:space-between;font-size:0.52rem;color:#8A95A3;margin-bottom:3px;font-weight:700}
+.m-prog-bar{height:8px;background:#F5F7FA;border-radius:10px;overflow:hidden}
+.m-prog-fill{height:100%;background:linear-gradient(90deg,#25A865,#1A7A4A);border-radius:10px}
+
+.m-prod-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #F0F0F0}
+.m-prod-item:last-child{border:none}
+.m-prod-icon{width:30px;height:30px;background:#E8F7EF;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0}
+.m-prod-info{flex:1}.m-prod-name{font-size:0.72rem;font-weight:700;color:#1A1D23}.m-prod-meta{font-size:0.55rem;color:#8A95A3}
+.m-prod-right{text-align:right}.m-prod-profit{font-size:0.65rem;font-weight:800;color:#1A7A4A}.m-prod-badge{font-size:0.5rem;font-weight:800;padding:1px 5px;border-radius:8px;margin-top:2px;display:inline-block}
+.badge-low{background:#FDEAEA;color:#E03B3B}.badge-ok{background:#E8F7EF;color:#1A7A4A}.badge-fast{background:#FFF3DC;color:#8A5A00}
+
+.m-debt-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #F0F0F0}
+.m-debt-item:last-child{border:none}
+.m-debt-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1B6CA8,#1B4CA8);display:flex;align-items:center;justify-content:center;color:white;font-size:0.65rem;font-weight:800;flex-shrink:0}
+.m-debt-info{flex:1}.m-debt-name{font-size:0.72rem;font-weight:700;color:#1A1D23}.m-debt-desc{font-size:0.52rem;color:#8A95A3}
+.m-debt-right{text-align:right}.m-debt-amt{font-size:0.78rem;font-weight:900;color:#E03B3B}
+.m-debt-status{font-size:0.5rem;font-weight:800;padding:1px 5px;border-radius:8px;display:inline-block;margin-top:2px}
+.s-pending{background:#FDEAEA;color:#E03B3B}.s-paid{background:#E8F7EF;color:#1A7A4A}
+
+.m-bottom{display:flex;border-top:1px solid #F0F0F0;background:white;padding:6px 0 4px}
+.m-nav{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+.m-nav-icon{font-size:0.9rem}.m-nav-label{font-size:0.42rem;font-weight:800;text-transform:uppercase;color:#8A95A3}
+.m-nav.active .m-nav-label{color:#1A7A4A}
+
+.m-paywall{padding:16px 12px;text-align:center;background:white}
+.m-pw-icon{font-size:2rem;margin-bottom:8px}
+.m-pw-h{font-size:0.9rem;font-weight:900;color:#1A1D23;margin-bottom:4px}
+.m-pw-p{font-size:0.6rem;color:#8A95A3;margin-bottom:10px}
+.m-price-tag{background:#FFF3DC;border:1.5px dashed #F5A623;border-radius:8px;padding:8px;margin-bottom:10px}
+.m-price-tag .pt{font-size:0.5rem;color:#8A95A3;font-weight:700;text-transform:uppercase}
+.m-price-tag .pp{font-size:1.3rem;font-weight:900;color:#1A1D23}
+.m-price-tag .ps{font-size:0.5rem;color:#8A95A3}
+.m-btn{width:100%;padding:10px;background:#1A7A4A;border:none;border-radius:6px;color:white;font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;margin-bottom:6px}
+.m-btn-gold{background:#F5A623}
+
+.m-auth{background:linear-gradient(160deg,#1A7A4A,#0F5230);min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0}
+.m-auth-hero{text-align:center;padding:20px 12px 12px}
+.m-auth-logo{width:40px;height:40px;background:white;border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:1.1rem}
+.m-auth-h{font-size:1.2rem;font-weight:900;color:white}
+.m-auth-h span{color:#F5A623}
+.m-auth-t{font-size:0.6rem;color:rgba(255,255,255,0.75);margin-top:2px}
+.m-auth-card{background:white;border-radius:16px 16px 0 0;padding:16px 14px 20px;width:100%}
+.m-auth-card h3{font-size:0.85rem;font-weight:800;margin-bottom:2px;color:#1A1D23}
+.m-auth-card .sub{font-size:0.58rem;color:#8A95A3;margin-bottom:10px}
+.m-form-group{margin-bottom:8px}
+.m-label{font-size:0.52rem;font-weight:800;color:#8A95A3;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px}
+.m-input{width:100%;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:6px;font-size:0.65rem;color:#1A1D23}
+
+.cf-mini{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 10px 8px}
+.cf-mini-box{border-radius:8px;padding:8px;text-align:center}
+.cf-mini-box.biz{background:#E8F7EF;border:1.5px solid #1A7A4A}
+.cf-mini-box.per{background:#FDEAEA;border:1.5px solid #E03B3B}
+.cf-mini-box .ci{font-size:0.9rem;margin-bottom:2px}
+.cf-mini-box .cl{font-size:0.5rem;font-weight:800;text-transform:uppercase}
+.cf-mini-box.biz .cl{color:#1A7A4A}.cf-mini-box.per .cl{color:#E03B3B}
+.cf-mini-box .ca{font-size:0.78rem;font-weight:900}
+.cf-mini-box.biz .ca{color:#1A7A4A}.cf-mini-box.per .ca{color:#E03B3B}
+
+.save-mini{background:#E8F7EF;border-radius:8px;margin:0 10px 8px;padding:8px 10px;display:flex;gap:8px;align-items:center}
+.save-mini .si{width:28px;height:28px;background:#1A7A4A;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0}
+.save-mini .st .stl{font-size:0.5rem;font-weight:800;text-transform:uppercase;color:#1A7A4A}
+.save-mini .st .sta{font-size:0.88rem;font-weight:900;color:#1A7A4A}
+
+/* Feature list */
+.features{max-width:640px;margin:32px auto;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.features{grid-template-columns:1fr}}
+.feat{background:#1E2530;border-radius:12px;padding:16px;border-left:3px solid #1A7A4A}
+.feat .fi{font-size:1.3rem;margin-bottom:6px}
+.feat .fh{font-size:0.9rem;font-weight:800;margin-bottom:4px}
+.feat .fp{font-size:0.78rem;color:#8A95A3;line-height:1.4}
+
+.badge-pill{display:inline-block;background:#1A7A4A;color:white;border-radius:20px;padding:4px 14px;font-size:0.78rem;font-weight:800;margin:0 4px 8px}
+.badge-pill.gold{background:#F5A623}.badge-pill.red{background:#E03B3B}.badge-pill.blue{background:#1B6CA8}
+
+.scroll-hint{text-align:center;color:#8A95A3;font-size:0.75rem;margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<h1>Biz<span>Count</span> 💰</h1>
+<p class="tagline">Smart Business Tracker for Small Kenyan Businesses — Fuata pesa yako! 🇰🇪</p>
+
+<div style="text-align:center;margin-bottom:20px">
+  <span class="badge-pill">📱 Mobile-First</span>
+  <span class="badge-pill gold">💵 M-Pesa Ready</span>
+  <span class="badge-pill red">🔒 3-Day Free Trial</span>
+  <span class="badge-pill blue">📶 Offline-First</span>
+</div>
+
+<p class="scroll-hint">👈 Scroll to see all screens →</p>
+
+<!-- SCREENS SHOWCASE -->
+<div class="screens">
+
+  <!-- Screen 1: Login -->
+  <div class="screen">
+    <div class="screen-label">🔑 Login Screen</div>
+    <div class="screen-body">
+      <div class="m-auth">
+        <div class="m-auth-hero">
+          <div class="m-auth-logo">💰</div>
+          <div class="m-auth-h">Biz<span>Count</span></div>
+          <div class="m-auth-t">Fuata pesa yako. Grow your business. 🌱</div>
+        </div>
+        <div class="m-auth-card">
+          <h3>Karibu! 👋</h3>
+          <div class="sub">Log in to manage your business</div>
+          <div class="m-form-group">
+            <label class="m-label">Phone Number</label>
+            <div class="m-input" style="color:#8A95A3;padding-left:40px;position:relative">+254 | 712 345 678</div>
+          </div>
+          <div class="m-form-group">
+            <label class="m-label">Your PIN</label>
+            <div class="m-input" style="color:#1A1D23">🔒  ••••</div>
+          </div>
+          <button class="m-btn">🚀 Login to My Business</button>
+          <div style="text-align:center;font-size:0.6rem;color:#8A95A3">New here? <span style="color:#1A7A4A;font-weight:800">Create Account →</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 2: Dashboard -->
+  <div class="screen">
+    <div class="screen-label">🏠 Dashboard</div>
+    <div class="screen-body">
+      <div class="m-top">
+        <div class="m-logo">Biz<span>Count</span></div>
+        <div class="m-user">Mama Wanjiku's</div>
+        <span style="font-size:0.9rem">⚙️</span>
+      </div>
+      <!-- Trial Banner -->
+      <div style="background:linear-gradient(90deg,#F5A623,#E8920A);padding:6px 10px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:0.6rem;font-weight:700;color:white">🎁 Free trial: 2 days left</span>
+        <span style="background:rgba(255,255,255,0.25);border-radius:4px;padding:2px 8px;font-size:0.55rem;font-weight:800;color:white">Upgrade</span>
+      </div>
+      <!-- Warning -->
+      <div class="m-warn">
+        <span style="font-size:0.75rem">⚠️</span>
+        <span>Low stock: <strong>Mafuta (500ml)</strong> — restock soon!</span>
+      </div>
+      <!-- Hero -->
+      <div class="m-hero">
+        <div class="ml">TODAY'S NET PROFIT</div>
+        <div class="mn">KSh 1,240</div>
+        <div class="ms">After expenses</div>
+        <div class="mb">Monday, 28 April</div>
+      </div>
+      <!-- Stat Grid -->
+      <div class="m-grid">
+        <div class="m-stat"><div class="sl">💰 Today Revenue</div><div class="sv">KSh 2,100</div></div>
+        <div class="m-stat red"><div class="sl">📋 Expenses</div><div class="sv" style="color:#E03B3B">KSh 860</div></div>
+        <div class="m-stat gold"><div class="sl">📝 Madeni</div><div class="sv" style="color:#F5A623">KSh 750</div></div>
+        <div class="m-stat blue"><div class="sl">📈 Month Profit</div><div class="sv" style="color:#1B6CA8">KSh 14,200</div></div>
+      </div>
+      <!-- Do Not Spend -->
+      <div class="m-donotspend">
+        <div class="dt">🚫 Money You Should NOT Spend</div>
+        <div class="dn">KSh 327</div>
+        <div style="font-size:0.5rem;color:#8A95A3">Needed for rent savings today</div>
+      </div>
+      <!-- Bottom Nav -->
+      <div class="m-bottom">
+        <div class="m-nav active"><div class="m-nav-icon">🏠</div><div class="m-nav-label">Home</div></div>
+        <div class="m-nav"><div class="m-nav-icon">📦</div><div class="m-nav-label">Products</div></div>
+        <div class="m-nav"><div class="m-nav-icon">📝</div><div class="m-nav-label">Madeni</div></div>
+        <div class="m-nav"><div class="m-nav-icon">🧾</div><div class="m-nav-label">Expenses</div></div>
+        <div class="m-nav"><div class="m-nav-icon">⚙️</div><div class="m-nav-label">Settings</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 3: Products -->
+  <div class="screen">
+    <div class="screen-label">📦 Products & Stock</div>
+    <div class="screen-body">
+      <div class="m-top">
+        <div class="m-logo">Biz<span>Count</span></div>
+        <div class="m-user">My Shop</div>
+        <span style="font-size:0.9rem">⚙️</span>
+      </div>
+      <div style="padding:10px 10px 4px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:0.85rem;font-weight:800;color:#1A1D23">My Products</div>
+        <div style="background:#1A7A4A;color:white;border-radius:6px;padding:4px 10px;font-size:0.6rem;font-weight:800">+ Add</div>
+      </div>
+      <div class="m-card">
+        <div class="m-prod-item">
+          <div class="m-prod-icon">🌾</div>
+          <div class="m-prod-info"><div class="m-prod-name">Unga (2kg)</div><div class="m-prod-meta">Buy: KSh 130 · Sell: KSh 160</div></div>
+          <div class="m-prod-right"><div class="m-prod-profit">+KSh 30</div><div class="m-prod-badge badge-ok">In Stock</div><div class="m-prod-badge badge-fast">🔥 Fast</div></div>
+        </div>
+        <div class="m-prod-item">
+          <div class="m-prod-icon">🫙</div>
+          <div class="m-prod-info"><div class="m-prod-name">Mafuta (500ml)</div><div class="m-prod-meta">Buy: KSh 85 · Sell: KSh 110</div></div>
+          <div class="m-prod-right"><div class="m-prod-profit">+KSh 25</div><div class="m-prod-badge badge-low">⚠️ Low</div></div>
+        </div>
+        <div class="m-prod-item">
+          <div class="m-prod-icon">🍬</div>
+          <div class="m-prod-info"><div class="m-prod-name">Sukari (1kg)</div><div class="m-prod-meta">Buy: KSh 95 · Sell: KSh 120</div></div>
+          <div class="m-prod-right"><div class="m-prod-profit">+KSh 25</div><div class="m-prod-badge badge-ok">In Stock</div></div>
+        </div>
+        <div class="m-prod-item">
+          <div class="m-prod-icon">🍞</div>
+          <div class="m-prod-info"><div class="m-prod-name">Bread (loaf)</div><div class="m-prod-meta">Buy: KSh 45 · Sell: KSh 65</div></div>
+          <div class="m-prod-right"><div class="m-prod-profit">+KSh 20</div><div class="m-prod-badge badge-ok">In Stock</div></div>
+        </div>
+      </div>
+      <div class="m-bottom">
+        <div class="m-nav"><div class="m-nav-icon">🏠</div><div class="m-nav-label">Home</div></div>
+        <div class="m-nav active"><div class="m-nav-icon">📦</div><div class="m-nav-label" style="color:#1A7A4A">Products</div></div>
+        <div class="m-nav"><div class="m-nav-icon">📝</div><div class="m-nav-label">Madeni</div></div>
+        <div class="m-nav"><div class="m-nav-icon">🧾</div><div class="m-nav-label">Expenses</div></div>
+        <div class="m-nav"><div class="m-nav-icon">⚙️</div><div class="m-nav-label">Settings</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 4: Madeni -->
+  <div class="screen">
+    <div class="screen-label">📝 Madeni (Debts)</div>
+    <div class="screen-body">
+      <div class="m-top">
+        <div class="m-logo">Biz<span>Count</span></div>
+        <div class="m-user">My Shop</div>
+        <span style="font-size:0.9rem">⚙️</span>
+      </div>
+      <div style="padding:10px 10px 6px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:0.85rem;font-weight:800;color:#1A1D23">📝 Madeni (Debts)</div>
+        <div style="background:#1A7A4A;color:white;border-radius:6px;padding:4px 10px;font-size:0.6rem;font-weight:800">+ Add</div>
+      </div>
+      <!-- Total owed -->
+      <div style="background:#FDEAEA;border:2px solid #E03B3B;border-radius:10px;margin:0 10px 8px;padding:10px 12px">
+        <div style="font-size:0.55rem;font-weight:800;text-transform:uppercase;color:#E03B3B;margin-bottom:2px">Total Money Owed To You</div>
+        <div style="font-size:1.4rem;font-weight:900;color:#E03B3B">KSh 1,250</div>
+        <div style="font-size:0.52rem;color:#8A95A3">Tap "Pay" when customer clears debt</div>
+      </div>
+      <div class="m-card">
+        <div class="m-debt-item">
+          <div class="m-debt-av">MW</div>
+          <div class="m-debt-info"><div class="m-debt-name">Mary Wanjiku</div><div class="m-debt-desc">Unga 2kg, Mafuta · 28 Apr</div><div class="m-debt-status s-pending">Pending</div></div>
+          <div class="m-debt-right"><div class="m-debt-amt">KSh 250</div><div style="background:#E8F7EF;color:#1A7A4A;border-radius:4px;padding:2px 6px;font-size:0.5rem;font-weight:800;margin-top:3px">Pay</div></div>
+        </div>
+        <div class="m-debt-item">
+          <div class="m-debt-av">JO</div>
+          <div class="m-debt-info"><div class="m-debt-name">John Ochieng</div><div class="m-debt-desc">Sukari, Bread · 27 Apr</div><div class="m-debt-status s-pending">Pending</div></div>
+          <div class="m-debt-right"><div class="m-debt-amt">KSh 500</div><div style="background:#E8F7EF;color:#1A7A4A;border-radius:4px;padding:2px 6px;font-size:0.5rem;font-weight:800;margin-top:3px">Pay</div></div>
+        </div>
+        <div class="m-debt-item">
+          <div class="m-debt-av">SA</div>
+          <div class="m-debt-info"><div class="m-debt-name">Sarah Akinyi</div><div class="m-debt-desc">Maziwa 2L · 25 Apr</div><div class="m-debt-status s-paid">✅ Paid</div></div>
+          <div class="m-debt-right"><div class="m-debt-amt" style="color:#1A7A4A">KSh 150</div></div>
+        </div>
+      </div>
+      <div class="m-bottom">
+        <div class="m-nav"><div class="m-nav-icon">🏠</div><div class="m-nav-label">Home</div></div>
+        <div class="m-nav"><div class="m-nav-icon">📦</div><div class="m-nav-label">Products</div></div>
+        <div class="m-nav active"><div class="m-nav-icon">📝</div><div class="m-nav-label" style="color:#1A7A4A">Madeni</div></div>
+        <div class="m-nav"><div class="m-nav-icon">🧾</div><div class="m-nav-label">Expenses</div></div>
+        <div class="m-nav"><div class="m-nav-icon">⚙️</div><div class="m-nav-label">Settings</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 5: Rent & Cash Flow -->
+  <div class="screen">
+    <div class="screen-label">🏠 Rent & Cash Flow</div>
+    <div class="screen-body">
+      <div class="m-top">
+        <div class="m-logo">Biz<span>Count</span></div>
+        <div class="m-user">My Shop</div>
+        <span style="font-size:0.9rem">⚙️</span>
+      </div>
+      <div style="padding:10px;padding-bottom:0">
+        <!-- Rent Progress Card -->
+        <div class="m-card">
+          <div class="m-card-title">🏠 Rent Progress</div>
+          <div class="m-prog-wrap">
+            <div class="m-prog-labels"><span>KSh 3,200 / KSh 8,000</span><span>40%</span></div>
+            <div class="m-prog-bar"><div class="m-prog-fill" style="width:40%;background:linear-gradient(90deg,#F5C842,#F5A623)"></div></div>
+          </div>
+          <!-- Save Box -->
+          <div class="save-mini" style="margin-top:8px;margin-bottom:0">
+            <div class="si">💵</div>
+            <div class="st"><div class="stl">Save Daily For Rent</div><div class="sta">KSh 327</div><div style="font-size:0.5rem;color:#8A95A3">for 15 days remaining</div></div>
+          </div>
+        </div>
+        <!-- Do Not Spend -->
+        <div class="m-donotspend">
+          <div class="dt">🚫 Money You Should NOT Spend</div>
+          <div class="dn">KSh 327</div>
+          <div style="font-size:0.5rem;color:#8A95A3">This money is needed for rent savings</div>
+        </div>
+        <!-- Cash Flow Split -->
+        <div style="font-size:0.72rem;font-weight:800;color:#1A1D23;padding:0 2px;margin-bottom:6px">💼 Cash Flow This Month</div>
+        <div class="cf-mini">
+          <div class="cf-mini-box biz">
+            <div class="ci">🏦</div>
+            <div class="cl">Business Money</div>
+            <div class="ca">KSh 8,400</div>
+          </div>
+          <div class="cf-mini-box per">
+            <div class="ci">👤</div>
+            <div class="cl">Personal Use</div>
+            <div class="ca">KSh 2,000</div>
+          </div>
+        </div>
+      </div>
+      <div class="m-bottom">
+        <div class="m-nav active"><div class="m-nav-icon" style="color:#1A7A4A">🏠</div><div class="m-nav-label" style="color:#1A7A4A">Home</div></div>
+        <div class="m-nav"><div class="m-nav-icon">📦</div><div class="m-nav-label">Products</div></div>
+        <div class="m-nav"><div class="m-nav-icon">📝</div><div class="m-nav-label">Madeni</div></div>
+        <div class="m-nav"><div class="m-nav-icon">🧾</div><div class="m-nav-label">Expenses</div></div>
+        <div class="m-nav"><div class="m-nav-icon">⚙️</div><div class="m-nav-label">Settings</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 6: Paywall -->
+  <div class="screen">
+    <div class="screen-label">💳 M-Pesa Paywall</div>
+    <div class="screen-body" style="background:#00000099">
+      <div style="background:rgba(0,0,0,0.5);padding:20px 10px">
+        <div class="m-paywall" style="border-radius:16px 16px 0 0;margin:0">
+          <div class="m-pw-icon">🔒</div>
+          <div class="m-pw-h">Unlock Full Access</div>
+          <div class="m-pw-p">Your free trial has ended. Pay monthly to keep using BizCount.</div>
+          <div class="m-price-tag">
+            <div class="pt">Monthly Subscription</div>
+            <div class="pp">KSh 200</div>
+            <div class="ps">Via M-Pesa · Cancel anytime</div>
+          </div>
+          <div class="m-form-group">
+            <label class="m-label">Safaricom Number</label>
+            <div class="m-input" style="padding-left:36px">+254 | 7XX XXX XXX</div>
+          </div>
+          <div style="background:#E8F7EF;border-radius:6px;padding:6px 8px;margin-bottom:8px;display:flex;gap:6px;align-items:center">
+            <span style="font-size:0.7rem">📱</span>
+            <span style="font-size:0.52rem;color:#1A7A4A;font-weight:700">You'll receive an M-Pesa prompt. Enter PIN to pay.</span>
+          </div>
+          <button class="m-btn m-btn-gold">💳 Pay KSh 200 via M-Pesa</button>
+          <div style="text-align:center;font-size:0.55rem;color:#8A95A3;margin-top:4px">🔒 Secured by Safaricom Daraja API</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end screens -->
+
+<!-- Feature Highlights -->
+<div class="features">
+  <div class="feat">
+    <div class="fi">📊</div>
+    <div class="fh">Real-Time Profit Tracking</div>
+    <div class="fp">See today's net profit after expenses. Know your money at a glance — just like a calculator.</div>
+  </div>
+  <div class="feat">
+    <div class="fi">📦</div>
+    <div class="fh">Smart Stock Management</div>
+    <div class="fp">Auto low-stock alerts. See which products are 🔥 fast-moving vs slow. Never run out by surprise.</div>
+  </div>
+  <div class="feat">
+    <div class="fi">📝</div>
+    <div class="fh">Madeni Tracker</div>
+    <div class="fp">Record every customer who takes goods on credit. Track who paid, who still owes, and how much.</div>
+  </div>
+  <div class="feat">
+    <div class="fi">🏠</div>
+    <div class="fh">Rent & Savings Planner</div>
+    <div class="fp">Set your rent. See exactly how much to save daily. Know what money you cannot spend.</div>
+  </div>
+  <div class="feat">
+    <div class="fi">💼</div>
+    <div class="fh">Business vs Personal Money</div>
+    <div class="fp">Track withdrawals for personal use. Keep business money clean and separate from personal spending.</div>
+  </div>
+  <div class="feat">
+    <div class="fi">📱</div>
+    <div class="fh">M-Pesa Payment (Daraja)</div>
+    <div class="fp">KSh 200/month via M-Pesa STK Push. Daraja API integration ready for production deployment.</div>
+  </div>
+</div>
+
+<div style="text-align:center;margin-top:24px;padding:16px;background:#1E2530;border-radius:16px;max-width:480px;margin-left:auto;margin-right:auto">
+  <div style="font-size:1.5rem;margin-bottom:6px">🚀</div>
+  <div style="font-weight:800;font-size:1rem;margin-bottom:4px">Ready to run locally</div>
+  <div style="font-size:0.82rem;color:#8A95A3;margin-bottom:12px">Open <code style="background:#252E3D;padding:2px 6px;border-radius:4px">index.html</code> in your browser — no server needed</div>
+  <div style="font-size:0.75rem;color:#4A5568">BizCount v1.0 · Made with ❤️ for Kenya 🇰🇪</div>
+</div>
+
+</body>
+</html>

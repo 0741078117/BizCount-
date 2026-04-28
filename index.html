@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1A7A4A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="description" content="BizCount — Smart business tracker for small Kenyan businesses. Track profits, stock, madeni and expenses." />
+  <title>BizCount — Track Your Business</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Emoji favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💰</text></svg>" />
+</head>
+<body>
+
+<!-- ============================================================
+     TOAST NOTIFICATION
+     ============================================================ -->
+<div id="toast" class="toast"></div>
+
+
+<!-- ============================================================
+     PAGE 1: LOGIN
+     ============================================================ -->
+<div id="loginPage" class="page">
+  <div class="auth-screen">
+    <div class="auth-hero">
+      <div class="auth-logo">
+        <!-- SVG Logo -->
+        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="44" height="44" rx="12" fill="#1A7A4A"/>
+          <path d="M22 8C14.268 8 8 14.268 8 22C8 29.732 14.268 36 22 36C29.732 36 36 29.732 36 22C36 14.268 29.732 8 22 8Z" fill="white" fill-opacity="0.15"/>
+          <path d="M22 14V22L27 25" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M16 28L19 25H25L28 28" stroke="#F5A623" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="22" cy="22" r="2" fill="#F5A623"/>
+        </svg>
+      </div>
+      <h1>Biz<span style="color:var(--gold)">Count</span></h1>
+      <p class="tagline">Fuata pesa yako. Grow your business. 🌱</p>
+    </div>
+
+    <div class="auth-card">
+      <h2>Karibu! 👋</h2>
+      <p class="sub">Log in to manage your business</p>
+
+      <div class="form-group">
+        <label>Phone Number</label>
+        <div class="input-icon-wrap mpesa-input-wrap">
+          <input type="tel" id="loginPhone" placeholder="7XX XXX XXX" inputmode="numeric" maxlength="9" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Your PIN</label>
+        <div class="input-icon-wrap">
+          <span class="icon">🔒</span>
+          <input type="password" id="loginPin" placeholder="Enter 4-digit PIN" maxlength="4" inputmode="numeric" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="handleLogin()">
+        🚀 Login to My Business
+      </button>
+
+      <p class="auth-link">
+        New here? <span onclick="Pages.show('registerPage')">Create Account →</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PAGE 2: REGISTER
+     ============================================================ -->
+<div id="registerPage" class="page">
+  <div class="auth-screen">
+    <div class="auth-hero">
+      <div class="auth-logo">
+        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="44" height="44" rx="12" fill="#1A7A4A"/>
+          <path d="M22 8C14.268 8 8 14.268 8 22C8 29.732 14.268 36 22 36C29.732 36 36 29.732 36 22C36 14.268 29.732 8 22 8Z" fill="white" fill-opacity="0.15"/>
+          <path d="M22 14V22L27 25" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M16 28L19 25H25L28 28" stroke="#F5A623" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="22" cy="22" r="2" fill="#F5A623"/>
+        </svg>
+      </div>
+      <h1>Biz<span style="color:var(--gold)">Count</span></h1>
+      <p class="tagline">3 days FREE trial — No card needed 🎁</p>
+    </div>
+
+    <div class="auth-card" style="overflow-y:auto;max-height:70vh">
+      <h2>Create Account</h2>
+      <p class="sub">Start your 3-day free trial today</p>
+
+      <div class="form-group">
+        <label>Your Name / Shop Name</label>
+        <div class="input-icon-wrap">
+          <span class="icon">🏪</span>
+          <input type="text" id="regName" placeholder="e.g. Mama Wanjiku's Shop" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>M-Pesa Phone Number</label>
+        <div class="input-icon-wrap mpesa-input-wrap">
+          <input type="tel" id="regPhone" placeholder="7XX XXX XXX" inputmode="numeric" maxlength="9" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Create PIN (4 digits)</label>
+        <div class="input-icon-wrap">
+          <span class="icon">🔒</span>
+          <input type="password" id="regPin" placeholder="Create 4-digit PIN" maxlength="4" inputmode="numeric" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Confirm PIN</label>
+        <div class="input-icon-wrap">
+          <span class="icon">🔒</span>
+          <input type="password" id="regPin2" placeholder="Repeat your PIN" maxlength="4" inputmode="numeric" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="handleRegister()">
+        🎉 Start Free Trial
+      </button>
+
+      <p class="auth-link">
+        Already have account? <span onclick="Pages.show('loginPage')">← Login</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PAGE 3: MAIN APP
+     ============================================================ -->
+<div id="appPage" class="page flex-col">
+
+  <!-- Trial Banner -->
+  <div id="trialBanner" class="trial-banner hidden">
+    <span class="tb-text">🎁 Free trial: 3 days left</span>
+    <button class="tb-btn" onclick="openPaywall()">Upgrade</button>
+  </div>
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="logo-text">Biz<span>Count</span></div>
+    <div class="user-pill" id="topBarName">My Shop</div>
+    <button class="icon-btn" onclick="openTab('settings')">⚙️</button>
+  </div>
+
+  <!-- Tab Contents -->
+  <div style="flex:1;overflow-y:auto;">
+
+    <!-- ======== HOME TAB ======== -->
+    <div id="tab-home" class="tab-content active">
+      <div class="main-content">
+
+        <!-- Warnings Area -->
+        <div id="warningsArea"></div>
+
+        <!-- Hero: Today's Profit -->
+        <div class="today-hero" id="heroCard">
+          <div class="label">TODAY'S NET PROFIT</div>
+          <div class="big-number" id="heroProfitNum">KSh 0</div>
+          <div class="sub-label">After expenses</div>
+          <div class="date-badge" id="heroDate">Loading...</div>
+        </div>
+
+        <!-- Stat Grid -->
+        <div class="stat-grid">
+          <div class="stat-card green">
+            <div class="s-icon">💰</div>
+            <div class="s-label">Today's Revenue</div>
+            <div class="s-value text-green" id="statRevenue">KSh 0</div>
+          </div>
+          <div class="stat-card red">
+            <div class="s-icon">📋</div>
+            <div class="s-label">Today's Expenses</div>
+            <div class="s-value text-red" id="statExpenses">KSh 0</div>
+          </div>
+          <div class="stat-card gold">
+            <div class="s-icon">📝</div>
+            <div class="s-label">Madeni (Owed)</div>
+            <div class="s-value text-gold" id="statDebt">KSh 0</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="s-icon">📈</div>
+            <div class="s-label">Month Profit</div>
+            <div class="s-value" style="color:var(--blue)" id="statMonthProfit">KSh 0</div>
+          </div>
+        </div>
+
+        <!-- Do Not Spend Box -->
+        <div class="card" style="border:2px solid var(--red);background:var(--red-light)">
+          <div class="flex items-center gap-1" style="margin-bottom:8px">
+            <span style="font-size:1.3rem">🚫</span>
+            <span style="font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--red)">Money You Should NOT Spend</span>
+          </div>
+          <div style="font-size:1.8rem;font-weight:900;color:var(--red)" id="doNotSpendAmt">KSh 0</div>
+          <div style="font-size:0.8rem;color:var(--mid);margin-top:4px">This money is needed for rent savings</div>
+        </div>
+
+        <!-- Rent Progress -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🏠 Rent Progress</div>
+            <button class="btn btn-sm btn-secondary" onclick="openModal('rentSettingsModal')">Set Rent</button>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="p-labels">
+              <span id="rentProgressLabel">KSh 0 / KSh 0</span>
+              <span id="rentProgressPct">0%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="rentProgressFill" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div class="save-box" style="margin-top:12px">
+            <div class="save-icon">💵</div>
+            <div class="save-text">
+              <div class="st-label">Save Daily For Rent</div>
+              <div class="st-amount" id="dailySaveAmt">KSh 0</div>
+              <div class="st-sub" id="dailySaveSub">calculated from days remaining</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cash Flow Split -->
+        <div class="section-header">
+          <h3>💼 Cash Flow This Month</h3>
+          <button class="btn btn-sm btn-secondary" onclick="openWithdrawal()">- Personal</button>
+        </div>
+        <div class="cashflow-split">
+          <div class="cf-box business">
+            <div class="cf-icon">🏦</div>
+            <div class="cf-label">Business Money</div>
+            <div class="cf-amount" id="cfBusiness">KSh 0</div>
+          </div>
+          <div class="cf-box personal">
+            <div class="cf-icon">👤</div>
+            <div class="cf-label">Personal Use</div>
+            <div class="cf-amount" id="cfPersonal">KSh 0</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section-header">
+          <h3>⚡ Quick Actions</h3>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <button class="btn btn-primary" onclick="openRecordSale()" style="font-size:0.9rem;padding:14px">
+            💰 Record Sale
+          </button>
+          <button class="btn btn-secondary" onclick="openAddExpense()" style="font-size:0.9rem;padding:14px">
+            📋 Add Expense
+          </button>
+          <button class="btn btn-outline" onclick="openAddDebt()" style="font-size:0.9rem;padding:14px">
+            📝 Add Madeni
+          </button>
+          <button class="btn btn-outline" onclick="openAddProduct()" style="font-size:0.9rem;padding:14px">
+            📦 Add Product
+          </button>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section-header">
+          <h3>📊 Recent Activity</h3>
+        </div>
+        <div class="card" style="padding:12px 16px">
+          <div id="recentActivity"></div>
+        </div>
+
+      </div>
+    </div><!-- end home tab -->
+
+
+    <!-- ======== PRODUCTS TAB ======== -->
+    <div id="tab-products" class="tab-content">
+      <div class="main-content">
+        <div class="section-header">
+          <h2>My Products</h2>
+          <button class="btn btn-sm btn-primary" onclick="openAddProduct()">+ Add</button>
+        </div>
+
+        <div id="productEmpty" class="empty-state hidden">
+          <div class="e-icon">📦</div>
+          <div class="e-text">No products yet</div>
+          <div class="e-sub">Add your products to track stock & profit</div>
+          <button class="btn btn-primary" style="margin-top:16px;max-width:200px" onclick="openAddProduct()">+ Add First Product</button>
+        </div>
+
+        <div id="productList"></div>
+      </div>
+    </div><!-- end products tab -->
+
+
+    <!-- ======== DEBTS TAB ======== -->
+    <div id="tab-debts" class="tab-content">
+      <div class="main-content">
+        <div class="section-header">
+          <h2>📝 Madeni (Debts)</h2>
+          <button class="btn btn-sm btn-primary" onclick="openAddDebt()">+ Add</button>
+        </div>
+
+        <!-- Total owed summary -->
+        <div class="card" style="background:var(--red-light);border:2px solid var(--red)">
+          <div style="font-size:0.78rem;font-weight:800;text-transform:uppercase;color:var(--red);margin-bottom:4px">Total Money Owed To You</div>
+          <div style="font-size:2rem;font-weight:900;color:var(--red)" id="debtTotalBig">KSh 0</div>
+          <div style="font-size:0.8rem;color:var(--mid)">Tap "Pay" when a customer clears their debt</div>
+        </div>
+
+        <div id="debtEmpty" class="empty-state hidden">
+          <div class="e-icon">🤝</div>
+          <div class="e-text">No debts recorded</div>
+          <div class="e-sub">Record when customers take goods on credit</div>
+        </div>
+
+        <div id="debtList"></div>
+      </div>
+    </div><!-- end debts tab -->
+
+
+    <!-- ======== EXPENSES TAB ======== -->
+    <div id="tab-expenses" class="tab-content">
+      <div class="main-content">
+        <div class="section-header">
+          <h2>🧾 Expenses</h2>
+          <button class="btn btn-sm btn-primary" onclick="openAddExpense()">+ Add</button>
+        </div>
+
+        <!-- Summary cards -->
+        <div class="stat-grid" style="margin-bottom:14px">
+          <div class="stat-card red">
+            <div class="s-icon">📅</div>
+            <div class="s-label">Today's Expenses</div>
+            <div class="s-value text-red" id="expenseTodayTotal">KSh 0</div>
+          </div>
+          <div class="stat-card red">
+            <div class="s-icon">📆</div>
+            <div class="s-label">Month Expenses</div>
+            <div class="s-value text-red" id="expenseMonthTotal">KSh 0</div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:12px 16px">
+          <div class="card-title" style="margin-bottom:12px">Recent Expenses</div>
+          <div id="expenseList"></div>
+        </div>
+      </div>
+    </div><!-- end expenses tab -->
+
+
+    <!-- ======== SETTINGS TAB ======== -->
+    <div id="tab-settings" class="tab-content">
+      <div class="main-content">
+        <h2 style="margin-bottom:16px">⚙️ Settings</h2>
+
+        <!-- Account Info -->
+        <div class="settings-section">
+          <div class="card-title" style="margin-bottom:8px;padding-left:4px">Account</div>
+          <div class="settings-item" onclick="openModal('businessSettingsModal')">
+            <div class="si-icon">🏪</div>
+            <div class="si-text">
+              <div class="si-label">Business Name</div>
+              <div class="si-sub" id="settingBusinessName">My Shop</div>
+            </div>
+            <span class="si-arrow">›</span>
+          </div>
+          <div class="settings-item" onclick="">
+            <div class="si-icon">📱</div>
+            <div class="si-text">
+              <div class="si-label">Phone Number</div>
+              <div class="si-sub" id="settingPhone">Not set</div>
+            </div>
+            <span class="si-arrow">›</span>
+          </div>
+        </div>
+
+        <!-- Financial Settings -->
+        <div class="settings-section">
+          <div class="card-title" style="margin-bottom:8px;padding-left:4px">Finance</div>
+          <div class="settings-item" onclick="openModal('rentSettingsModal')">
+            <div class="si-icon">🏠</div>
+            <div class="si-text">
+              <div class="si-label">Monthly Rent</div>
+              <div class="si-sub" id="settingRentDisplay">Not set</div>
+            </div>
+            <span class="si-arrow">›</span>
+          </div>
+          <div class="settings-item" onclick="openWithdrawal()">
+            <div class="si-icon">👤</div>
+            <div class="si-text">
+              <div class="si-label">Record Personal Withdrawal</div>
+              <div class="si-sub">Track money you take for personal use</div>
+            </div>
+            <span class="si-arrow">›</span>
+          </div>
+        </div>
+
+        <!-- Subscription -->
+        <div class="settings-section">
+          <div class="card-title" style="margin-bottom:8px;padding-left:4px">Subscription</div>
+          <div class="card">
+            <div style="font-size:0.78rem;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:8px">STATUS</div>
+            <div id="subscriptionStatus" style="font-size:1rem;font-weight:700;margin-bottom:12px">Loading...</div>
+            <button class="btn btn-gold" onclick="openPaywall()">
+              💳 Upgrade — KSh 200/month
+            </button>
+          </div>
+        </div>
+
+        <!-- Logout -->
+        <div class="settings-section">
+          <button class="btn btn-danger" onclick="Auth.logout()">🚪 Log Out</button>
+        </div>
+
+        <!-- Version -->
+        <p style="text-align:center;margin-top:20px;font-size:0.75rem;color:var(--muted)">BizCount v1.0 · Made for Kenya 🇰🇪</p>
+
+      </div>
+    </div><!-- end settings tab -->
+
+  </div><!-- end tab wrapper -->
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="home" onclick="openTab('home')">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Home</span>
+    </button>
+    <button class="nav-item" data-tab="products" onclick="openTab('products')">
+      <span class="nav-icon">📦</span>
+      <span class="nav-label">Products</span>
+    </button>
+    <button class="nav-item" data-tab="debts" onclick="openTab('debts'); document.getElementById('debtTotalBig').textContent = fmt(Debts.totalOwed())">
+      <span class="nav-icon">📝</span>
+      <span class="nav-label">Madeni</span>
+    </button>
+    <button class="nav-item" data-tab="expenses" onclick="openTab('expenses')">
+      <span class="nav-icon">🧾</span>
+      <span class="nav-label">Expenses</span>
+    </button>
+    <button class="nav-item" data-tab="settings" onclick="openTab('settings')">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">Settings</span>
+    </button>
+  </nav>
+
+</div><!-- end appPage -->
+
+
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- ADD PRODUCT -->
+<div id="addProductModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📦 Add New Product</div>
+    <form id="addProductForm" onsubmit="return false">
+      <div class="form-group">
+        <label>Product Name</label>
+        <input type="text" id="newProductName" placeholder="e.g. Unga (2kg)" />
+      </div>
+      <div class="form-group">
+        <label>Buying Price (KSh)</label>
+        <input type="number" id="newBuyPrice" placeholder="How much you buy it" inputmode="decimal" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Selling Price (KSh)</label>
+        <input type="number" id="newSellPrice" placeholder="How much you sell it" inputmode="decimal" min="0" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label>Quantity in Stock</label>
+          <input type="number" id="newQuantity" placeholder="0" inputmode="numeric" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Low Stock Alert At</label>
+          <input type="number" id="newLowStock" placeholder="5" inputmode="numeric" min="0" value="5" />
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="submitAddProduct()">✅ Save Product</button>
+      <button class="btn btn-outline mt-1" onclick="closeModal('addProductModal')" style="margin-top:8px">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<!-- EDIT PRODUCT -->
+<div id="editProductModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ Edit Product</div>
+    <input type="hidden" id="editProductId" />
+    <div class="form-group">
+      <label>Product Name</label>
+      <input type="text" id="editProductName" />
+    </div>
+    <div class="form-group">
+      <label>Buying Price (KSh)</label>
+      <input type="number" id="editBuyPrice" inputmode="decimal" />
+    </div>
+    <div class="form-group">
+      <label>Selling Price (KSh)</label>
+      <input type="number" id="editSellPrice" inputmode="decimal" />
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group">
+        <label>Quantity</label>
+        <input type="number" id="editQuantity" inputmode="numeric" />
+      </div>
+      <div class="form-group">
+        <label>Low Stock At</label>
+        <input type="number" id="editLowStock" inputmode="numeric" />
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="submitEditProduct()">✅ Save Changes</button>
+    <button class="btn btn-danger" style="margin-top:8px" onclick="deleteProductFromEdit()">🗑️ Delete Product</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('editProductModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- RECORD SALE -->
+<div id="recordSaleModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💰 Record a Sale</div>
+    <p style="margin-bottom:12px;font-size:0.88rem;">Tap a product to select it:</p>
+    <div class="sale-product-grid" id="saleProductGrid"></div>
+    <div id="selectedProductPreview" style="font-size:0.85rem;font-weight:700;color:var(--green);min-height:18px;margin-bottom:12px;text-align:center"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group">
+        <label>Quantity Sold</label>
+        <input type="number" id="saleQty" value="1" min="1" inputmode="numeric" />
+      </div>
+      <div class="form-group">
+        <label>Payment Method</label>
+        <select id="salePayment">
+          <option value="cash">💵 Cash</option>
+          <option value="mpesa">📱 M-Pesa</option>
+          <option value="credit">📋 Credit (Madeni)</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="submitSale()">✅ Record Sale</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('recordSaleModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- ADD DEBT -->
+<div id="addDebtModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📝 Record Madeni (Debt)</div>
+    <form id="addDebtForm" onsubmit="return false">
+      <div class="form-group">
+        <label>Customer Name</label>
+        <div class="input-icon-wrap">
+          <span class="icon">👤</span>
+          <input type="text" id="debtCustomer" placeholder="e.g. Mama Akinyi" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Phone (Optional)</label>
+        <div class="input-icon-wrap mpesa-input-wrap">
+          <input type="tel" id="debtPhone" placeholder="7XX XXX XXX" inputmode="numeric" maxlength="9" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Amount Owed (KSh)</label>
+        <input type="number" id="debtAmount" placeholder="Enter amount" inputmode="decimal" min="0" />
+      </div>
+      <div class="form-group">
+        <label>What did they take?</label>
+        <input type="text" id="debtDesc" placeholder="e.g. Unga 2kg, Sukari 1kg" />
+      </div>
+      <button class="btn btn-primary" onclick="submitDebt()">✅ Save Debt</button>
+      <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('addDebtModal')">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<!-- PAY DEBT -->
+<div id="payDebtModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💸 Record Payment</div>
+    <input type="hidden" id="payDebtId" />
+    <div class="form-group">
+      <label>Amount Paid (KSh)</label>
+      <input type="number" id="payDebtAmount" placeholder="Enter amount paid" inputmode="decimal" min="0" />
+    </div>
+    <button class="btn btn-primary" onclick="submitPayDebt()">✅ Confirm Payment</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('payDebtModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- ADD EXPENSE -->
+<div id="addExpenseModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🧾 Add Expense</div>
+    <form id="addExpenseForm" onsubmit="return false">
+      <div class="form-group">
+        <label>Category</label>
+        <select id="expenseCategory">
+          <option value="Stock">📦 Stock / Restocking</option>
+          <option value="Rent">🏠 Rent</option>
+          <option value="Transport">🚗 Transport</option>
+          <option value="Food">🍽️ Food</option>
+          <option value="Airtime">📱 Airtime / Data</option>
+          <option value="Other">📋 Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Amount (KSh)</label>
+        <input type="number" id="expenseAmount" placeholder="Enter amount" inputmode="decimal" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Description (Optional)</label>
+        <input type="text" id="expenseDesc" placeholder="e.g. Bought 10kg unga from Nairobi" />
+      </div>
+      <button class="btn btn-primary" onclick="submitExpense()">✅ Save Expense</button>
+      <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('addExpenseModal')">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<!-- WITHDRAWAL -->
+<div id="withdrawalModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">👤 Personal Withdrawal</div>
+    <p style="font-size:0.88rem;margin-bottom:16px;color:var(--mid)">Record money you are taking from the business for personal use. This keeps your business money separate.</p>
+    <div class="form-group">
+      <label>Amount (KSh)</label>
+      <input type="number" id="withdrawAmount" placeholder="Enter amount" inputmode="decimal" min="0" />
+    </div>
+    <div class="form-group">
+      <label>Reason (Optional)</label>
+      <input type="text" id="withdrawNote" placeholder="e.g. School fees, food" />
+    </div>
+    <button class="btn btn-danger" onclick="submitWithdrawal()">💸 Record Withdrawal</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('withdrawalModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- RENT SETTINGS -->
+<div id="rentSettingsModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏠 Set Monthly Rent</div>
+    <p style="font-size:0.88rem;margin-bottom:16px;color:var(--mid)">BizCount will calculate how much you need to save daily to pay your rent at end of month.</p>
+    <div class="form-group">
+      <label>Monthly Rent (KSh)</label>
+      <input type="number" id="rentInput" placeholder="e.g. 8000" inputmode="decimal" min="0" />
+    </div>
+    <button class="btn btn-primary" onclick="saveRentSettings()">✅ Save Rent Amount</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('rentSettingsModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- BUSINESS SETTINGS -->
+<div id="businessSettingsModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏪 Business Name</div>
+    <div class="form-group">
+      <label>Business Name</label>
+      <input type="text" id="settingNameInput" placeholder="Enter your shop name" />
+    </div>
+    <button class="btn btn-primary" onclick="saveBusinessSettings()">✅ Save</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('businessSettingsModal')">Cancel</button>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PAYWALL MODAL
+     ============================================================ -->
+<div id="paywallModal" class="paywall-overlay">
+  <div class="paywall-sheet">
+    <div class="paywall-icon">🔒</div>
+    <h2>Unlock Full Access</h2>
+    <p>Your free trial has ended. Pay once per month to continue using BizCount and grow your business.</p>
+
+    <div class="price-tag">
+      <div class="pt-label">Monthly Subscription</div>
+      <div class="pt-price">KSh 200</div>
+      <div class="pt-sub">Via M-Pesa · Cancel anytime</div>
+    </div>
+
+    <div class="form-group">
+      <label>Your Safaricom Number</label>
+      <div class="mpesa-input-wrap" style="position:relative">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--green);font-size:0.95rem">+254</span>
+        <input type="tel" id="mpesaPhone" placeholder="7XX XXX XXX" inputmode="numeric" maxlength="9" style="width:100%;padding:14px 16px 14px 64px;border:2px solid var(--border);border-radius:8px;font-size:1rem" />
+      </div>
+    </div>
+
+    <!-- ===== DARAJA API CONFIG ===== -->
+    <!-- M-Pesa STK Push is handled by DARAJA object in app.js -->
+    <!-- See DARAJA.stkPush() for backend integration details -->
+    <div style="background:var(--green-pale);border-radius:8px;padding:10px 12px;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:1.1rem">📱</span>
+      <span style="font-size:0.82rem;color:var(--green);font-weight:700">You will receive an M-Pesa prompt on your phone. Enter your M-Pesa PIN to complete payment.</span>
+    </div>
+    <!-- ===== END DARAJA API CONFIG ===== -->
+
+    <button class="btn btn-gold" id="payNowBtn" onclick="initiatePayment()">
+      💳 Pay KSh 200 via M-Pesa
+    </button>
+
+    <button class="btn btn-outline" style="margin-top:10px" onclick="closeModal('paywallModal')">
+      Maybe Later
+    </button>
+
+    <p style="margin-top:12px;font-size:0.75rem;color:var(--muted)">
+      🔒 Secure payment via Safaricom Daraja API
+    </p>
+  </div>
+</div>
+
+
+<!-- Scripts -->
+<script src="js/app.js"></script>
+
+</body>
+</html>
