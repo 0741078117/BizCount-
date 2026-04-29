@@ -1199,3 +1199,86 @@ small { font-size: 0.78rem; color: var(--muted); }
 .export-option.gold-opt  .eo-icon { background: var(--gold); }
 .export-option .eo-text .eo-label { font-size: 0.95rem; font-weight: 800; color: var(--dark); }
 .export-option .eo-text .eo-sub   { font-size: 0.78rem; color: var(--mid); margin-top: 2px; }
+
+/* ============================================================
+   5-LINE MONEY CARD
+   ============================================================ */
+.money-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+}
+.money-row:last-child { border-bottom: none; }
+
+.money-row.deduct  { background: #FDFAF5; }
+.money-row.result  { background: #F0FAF4; border-bottom: 2px solid var(--green); border-top: 2px solid var(--green); }
+.money-row.cash-use{ background: var(--green); }
+
+.mr-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mr-icon { font-size: 1.3rem; flex-shrink: 0; }
+
+.mr-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--dark);
+  line-height: 1.2;
+}
+.money-row.cash-use .mr-label { color: white; }
+.money-row.cash-use .mr-sub   { color: rgba(255,255,255,0.75); }
+
+.mr-sub {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.mr-value {
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--dark);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.mr-value.minus    { color: var(--red); }
+.mr-value.result-val { font-size: 1.15rem; color: var(--green); }
+.mr-value.cash-val { font-size: 1.2rem; color: white; }
+
+/* ============================================================
+   STAT STRIP (horizontal scrollable row of 4 stats)
+   ============================================================ */
+.stat-strip {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--card-shadow);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.ss-item {
+  flex: 1;
+  text-align: center;
+  padding: 12px 6px;
+}
+
+.ss-icon  { font-size: 1.1rem; margin-bottom: 4px; }
+.ss-val   { font-size: 0.88rem; font-weight: 900; color: var(--dark); line-height: 1; }
+.ss-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: 0.3px; margin-top: 3px; }
+
+.ss-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--border);
+  flex-shrink: 0;
+}

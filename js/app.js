@@ -207,8 +207,8 @@ const Trial = {
     const trial = Data.getTrial() || {};
     trial.paid = true;
     Data.saveTrial(trial);
-    // ===== FIREBASE: Update subscription status in Firestore =====
-    // firebase.firestore().doc(`users/${currentUser.uid}`).update({ paid: true, paidAt: new Date() })
+    // ===== FIREBASE: sync trial/payment status =====
+    if (window.Firebase) window.Firebase.cloud.saveTrial(trial);
   },
 
   renderBanner: () => {
@@ -238,39 +238,42 @@ const Trial = {
 };
 
 // ============================================================
-// AUTH SYSTEM
+// AUTH SYSTEM — Firebase backed
 // ============================================================
 
 const Auth = {
   isLoggedIn: () => !!Data.getUser(),
 
-  login: (phone, pin) => {
-    // ===== FIREBASE: firebase.auth().signInWithPhoneNumber =====
-    // Simulated local auth
-    const user = Data.getUser();
-    if (!user) { showToast('Account not found. Please register.', 'error'); return false; }
-    if (user.pin !== pin) { showToast('Wrong PIN. Try again.', 'error'); return false; }
-    showToast(`Welcome back, ${user.name}! 👋`, 'success');
-    return true;
+  login: async (phone, pin) => {
+    if (!phone || !pin) { showToast('Enter your phone and PIN.', 'error'); return; }
+    // ===== FIREBASE: signInWithEmailAndPassword =====
+    const result = await window.Firebase.login(phone, pin);
+    if (result.ok) {
+      // onAuthStateChanged in firebase.js will call initApp() automatically
+      showToast('Welcome back! 👋', 'success');
+    } else {
+      showToast(result.error, 'error');
+    }
   },
 
-  register: (name, phone, pin) => {
-    // ===== FIREBASE: firebase.auth().createUserWithEmailAndPassword OR phone auth =====
-    if (!name || !phone || !pin) { showToast('Please fill all fields.', 'error'); return false; }
-    if (pin.length < 4) { showToast('PIN must be 4 digits.', 'error'); return false; }
-    const settings = Data.getSettings();
-    settings.businessName = name;
-    settings.phone = phone;
-    Data.saveSettings(settings);
-    Data.saveUser({ name, phone, pin, createdAt: Dates.now() });
-    Trial.init();
-    showToast(`Account created! Welcome, ${name} 🎉`, 'success');
-    return true;
+  register: async (name, phone, pin) => {
+    if (!name || !phone || !pin) { showToast('Please fill all fields.', 'error'); return; }
+    if (pin.length < 4) { showToast('PIN must be 4 digits.', 'error'); return; }
+    // ===== FIREBASE: createUserWithEmailAndPassword =====
+    const result = await window.Firebase.register(name, phone, pin);
+    if (result.ok) {
+      showToast(`Account created! Welcome, ${result.name} 🎉`, 'success');
+      // onAuthStateChanged in firebase.js will call initApp() automatically
+    } else {
+      showToast(result.error, 'error');
+    }
   },
 
-  logout: () => {
-    // ===== FIREBASE: firebase.auth().signOut() =====
+  logout: async () => {
+    // ===== FIREBASE: signOut =====
+    await window.Firebase.logout();
     Pages.show('loginPage');
+    showToast('Logged out. See you soon! 👋', 'info');
   }
 };
 
@@ -295,7 +298,8 @@ const Products = {
     product.profit = product.sellPrice - product.buyPrice;
     products.push(product);
     Data.saveProducts(products);
-    // ===== FIREBASE: firestore().collection('products').add(product) =====
+    // ===== FIREBASE: sync to Firestore =====
+    if (window.Firebase) window.Firebase.cloud.saveProduct(product);
     showToast(`✅ "${product.name}" added!`);
     return product;
   },
@@ -307,12 +311,16 @@ const Products = {
     products[idx] = { ...products[idx], ...changes };
     products[idx].profit = products[idx].sellPrice - products[idx].buyPrice;
     Data.saveProducts(products);
+    // ===== FIREBASE: sync to Firestore =====
+    if (window.Firebase) window.Firebase.cloud.saveProduct(products[idx]);
     return true;
   },
 
   delete: (id) => {
     const products = Data.getProducts().filter(p => p.id !== id);
     Data.saveProducts(products);
+    // ===== FIREBASE: sync to Firestore =====
+    if (window.Firebase) window.Firebase.cloud.deleteProduct(id);
     showToast('Product deleted.', 'info');
   },
 
@@ -329,6 +337,12 @@ const Products = {
 
     list.innerHTML = '';
 
+    // Stock value totals
+    const totalCost    = products.reduce((s, p) => s + (p.quantity * p.buyPrice),  0);
+    const totalSellVal = products.reduce((s, p) => s + (p.quantity * p.sellPrice), 0);
+    _setEl('prodStockCost',    fmt(totalCost));
+    _setEl('prodStockSellVal', fmt(totalSellVal));
+
     if (!products.length) {
       if (empty) empty.classList.remove('hidden');
       return;
@@ -338,6 +352,8 @@ const Products = {
     products.forEach((p, i) => {
       const isLow  = Products.isLowStock(p);
       const isFast = Products.isFastMoving(p);
+      const stockCostVal = p.quantity * p.buyPrice;
+
       let badge = `<span class="stock-badge ok">In Stock</span>`;
       if (isLow) badge = `<span class="stock-badge low">⚠️ Low</span>`;
       if (isFast) badge += `<span class="stock-badge fast" style="margin-left:4px">🔥 Fast</span>`;
@@ -349,13 +365,13 @@ const Products = {
         <div class="product-icon">${p.icon}</div>
         <div class="product-info">
           <div class="p-name">${p.name}</div>
-          <div class="p-meta">Buy: ${fmt(p.buyPrice)} · Sell: ${fmt(p.sellPrice)}</div>
+          <div class="p-meta">Buy: ${fmt(p.buyPrice)} · Sell: ${fmt(p.sellPrice)} · Profit: <strong style="color:var(--green)">+${fmt(p.profit)}</strong></div>
+          <div class="p-meta" style="margin-top:3px">Stock: <strong>${p.quantity} units</strong> · Value: <span style="color:var(--blue);font-weight:700">${fmt(stockCostVal)}</span></div>
           <div class="p-meta" style="margin-top:4px">${badge}</div>
         </div>
         <div class="product-right">
-          <div class="p-profit">+${fmt(p.profit)}</div>
-          <div class="p-stock" style="margin-top:4px">Qty: ${p.quantity}</div>
-          <button class="btn btn-sm btn-secondary" style="margin-top:6px" onclick="openEditProduct('${p.id}')">Edit</button>
+          <button class="btn btn-sm btn-secondary" style="margin-bottom:4px" onclick="openEditProduct('${p.id}')">Edit</button>
+          <button class="btn btn-sm btn-outline" onclick="openRestockModal('${p.id}')">📦 Restock</button>
         </div>
       `;
       list.appendChild(el);
@@ -400,7 +416,8 @@ const Sales = {
       salesCount: (product.salesCount || 0) + qty
     });
 
-    // ===== FIREBASE: firestore().collection('sales').add(sale) =====
+    // ===== FIREBASE: sync sale to Firestore =====
+    if (window.Firebase) window.Firebase.cloud.saveSale(sale);
     showToast(`💰 Sale recorded: +${fmt(sale.profit)} profit!`);
     return sale;
   },
@@ -468,7 +485,8 @@ const Debts = {
     };
     debts.push(debt);
     Data.saveDebts(debts);
-    // ===== FIREBASE: firestore().collection('debts').add(debt) =====
+    // ===== FIREBASE: sync to Firestore =====
+    if (window.Firebase) window.Firebase.cloud.saveDebt(debt);
     showToast(`📝 Debt recorded for ${debt.customerName}`);
     return debt;
   },
@@ -482,6 +500,8 @@ const Debts = {
     debt.status = debt.paidAmount >= debt.amount ? 'paid' : 'partial';
     debt.updatedAt = Dates.now();
     Data.saveDebts(debts);
+    // ===== FIREBASE: sync to Firestore =====
+    if (window.Firebase) window.Firebase.cloud.saveDebt(debt);
     showToast(debt.status === 'paid' ? `✅ ${debt.customerName} cleared their debt!` : `💸 Partial payment recorded.`);
     return true;
   },
@@ -489,6 +509,8 @@ const Debts = {
   delete: (id) => {
     const debts = Data.getDebts().filter(d => d.id !== id);
     Data.saveDebts(debts);
+    // ===== FIREBASE: sync to Firestore =====
+    if (window.Firebase) window.Firebase.cloud.deleteDebt(id);
     showToast('Debt record deleted.', 'info');
   },
 
@@ -556,7 +578,8 @@ const Expenses = {
     };
     expenses.push(expense);
     Data.saveExpenses(expenses);
-    // ===== FIREBASE: firestore().collection('expenses').add(expense) =====
+    // ===== FIREBASE: sync to Firestore =====
+    if (window.Firebase) window.Firebase.cloud.saveExpense(expense);
     showToast(`📋 Expense added: ${fmt(expense.amount)}`);
     return expense;
   },
@@ -606,6 +629,9 @@ const DailySavings = {
       createdAt: Dates.now(),
     });
     DailySavings.saveAll(all);
+    // ===== FIREBASE: sync daily saving =====
+    const latest = all[all.length - 1];
+    if (window.Firebase) window.Firebase.cloud.saveDailySaving(latest);
   },
 
   todayRecord: () => {
@@ -677,8 +703,11 @@ const RentTracker = {
 const Withdrawals = {
   add: (amount, note = '') => {
     const w = Data.getWithdrawals();
-    w.push({ id: uid(), amount: parseFloat(amount)||0, note, date: Dates.today(), createdAt: Dates.now() });
+    const entry = { id: uid(), amount: parseFloat(amount)||0, note, date: Dates.today(), createdAt: Dates.now() };
+    w.push(entry);
     Data.saveWithdrawals(w);
+    // ===== FIREBASE: sync to Firestore =====
+    if (window.Firebase) window.Firebase.cloud.saveWithdrawal(entry);
     showToast(`💸 Withdrawal of ${fmt(amount)} recorded.`, 'info');
   },
   todayTotal: () => {
@@ -700,79 +729,68 @@ const Withdrawals = {
 // ============================================================
 
 function renderDashboard() {
-  const settings      = Data.getSettings();
+  const settings = Data.getSettings();
 
-  // ── Revenue & costs ──────────────────────────────────────
-  const todayRevenue  = Sales.todayRevenue();            // Total money collected
-  const todayCOGS     = Sales.todayCOGS();               // Cost of goods sold (buying prices)
-  const todayGrossProfit = todayRevenue - todayCOGS;     // Gross profit (sell − buy)
-  const todayExpenses = Expenses.todayTotal();           // Other expenses (transport, etc.)
-  const todayNetProfit= todayGrossProfit - todayExpenses;// Profit after all expenses
+  // ── THE 5 NUMBERS ────────────────────────────────────────
+  // 1. Revenue: total cash collected from sales today
+  const revenue      = Sales.todayRevenue();
+  // 2. Stock cost: buying price × qty for every item sold today
+  const stockCost    = Sales.todayCOGS();
+  // 3. Net Profit: revenue minus stock cost (the real earning)
+  const netProfit    = revenue - stockCost;
+  // 4. Daily rent saving
+  const rentSave     = RentTracker.dailySavingsNeeded();
+  // 5. Cash you can use: net profit minus rent saving
+  const cashCanUse   = netProfit - rentSave;
 
-  // ── Savings deducted from today's profit ─────────────────
-  const dailyRentSave    = RentTracker.dailySavingsNeeded();
-  const dailyRestockSave = parseFloat(settings.restockFund) || 0;
-  const totalDailySavings= dailyRentSave + dailyRestockSave;
+  // ── MONTH numbers ────────────────────────────────────────
+  const monthProfit  = Sales.monthTotal();
+  const totalDebt    = Debts.totalOwed();
+  const todayExpenses= Expenses.todayTotal();
+  const rent         = parseFloat(settings.rent) || 0;
+  const monthSaved   = RentTracker.monthSaved();
+  const rentProgress = RentTracker.rentProgress();
 
-  // Money you can actually use = net profit minus what you must set aside
-  const moneyYouCanUse   = todayNetProfit - totalDailySavings;
+  // ── Stock value (all products: qty × buy price) ──────────
+  const products     = Data.getProducts();
+  const stockValue   = products.reduce((s, p) => s + (p.quantity * p.buyPrice), 0);
 
-  // ── Month totals ─────────────────────────────────────────
-  const monthProfit   = Sales.monthTotal();
-  const monthRevenue  = Sales.monthRevenue();
-  const totalDebt     = Debts.totalOwed();
-  const rentProgress  = RentTracker.rentProgress();
-  const rent          = parseFloat(settings.rent) || 0;
-  const monthSaved    = RentTracker.monthSaved();
-
-  // ── Hero card ─────────────────────────────────────────────
-  const heroNum  = document.getElementById('heroProfitNum');
-  const heroSub  = document.getElementById('heroSub');
+  // ── Hero ─────────────────────────────────────────────────
+  _setEl('heroProfitNum', fmt(netProfit));
+  _setEl('heroSub', netProfit >= 0 ? 'Revenue minus stock cost' : 'Stock cost exceeded revenue today');
   const heroDate = document.getElementById('heroDate');
-  if (heroNum)  heroNum.textContent  = fmt(todayNetProfit);
-  if (heroSub)  heroSub.textContent  = todayNetProfit >= 0 ? 'Profit after all expenses' : 'You spent more than you earned';
-  if (heroDate) {
-    heroDate.textContent = new Date().toLocaleDateString('en-KE', { weekday:'long', day:'numeric', month:'long' });
-  }
+  if (heroDate) heroDate.textContent = new Date().toLocaleDateString('en-KE', { weekday:'long', day:'numeric', month:'long' });
   const hero = document.getElementById('heroCard');
-  if (hero) {
-    hero.style.background = todayNetProfit >= 0
-      ? 'linear-gradient(135deg, var(--green) 0%, #0F5230 100%)'
-      : 'linear-gradient(135deg, #C0392B 0%, #922B21 100%)';
-  }
+  if (hero) hero.style.background = netProfit >= 0
+    ? 'linear-gradient(135deg, var(--green) 0%, #0F5230 100%)'
+    : 'linear-gradient(135deg, #C0392B 0%, #922B21 100%)';
 
-  // ── Money Breakdown card ──────────────────────────────────
-  _setEl('bdRevenue',      fmt(todayRevenue));
-  _setEl('bdCOGS',        `-${fmt(todayCOGS)}`);
-  _setEl('bdGrossProfit',  fmt(todayGrossProfit));
-  _setEl('bdExpenses',    `-${fmt(todayExpenses)}`);
-  _setEl('bdNetProfit',    fmt(todayNetProfit));
-  _setEl('bdRentSave',    `-${fmt(dailyRentSave)}`);
-  _setEl('bdRestockSave', `-${fmt(dailyRestockSave)}`);
-  _setEl('bdCanUse',       fmt(moneyYouCanUse));
+  // ── 5-line money card ────────────────────────────────────
+  _setEl('bdRevenue',  fmt(revenue));
+  _setEl('bdCOGS',    `-${fmt(stockCost)}`);
+  _setEl('bdNetProfit', fmt(netProfit));
+  _setEl('bdRentSave', `-${fmt(rentSave)}`);
+  _setEl('bdCanUse',    fmt(cashCanUse));
 
-  // Colour the "can use" number
-  const canUseEl = document.getElementById('bdCanUse');
-  if (canUseEl) canUseEl.style.color = moneyYouCanUse >= 0 ? 'var(--green)' : 'var(--red)';
+  // Colour net profit row based on value
+  const netRow = document.getElementById('netProfitRow');
+  if (netRow) netRow.style.background = netProfit >= 0 ? '#F0FAF4' : '#FEF0F0';
+  const netVal = document.getElementById('bdNetProfit');
+  if (netVal) netVal.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red)';
 
-  // ── Stat cards ───────────────────────────────────────────
-  _setEl('statRevenue',    fmt(todayRevenue));
+  // Colour cash-can-use row
+  const cashRow = document.getElementById('cashUseRow');
+  if (cashRow) cashRow.style.background = cashCanUse >= 0 ? 'var(--green)' : 'var(--red)';
+  const cashVal = document.getElementById('bdCanUse');
+  if (cashVal) cashVal.style.color = 'white';
+
+  // ── Stat strip ───────────────────────────────────────────
   _setEl('statExpenses',   fmt(todayExpenses));
   _setEl('statDebt',       fmt(totalDebt));
   _setEl('statMonthProfit',fmt(monthProfit));
+  _setEl('statStockVal',   fmt(stockValue));
 
-  // ── Do Not Touch box ─────────────────────────────────────
-  _setEl('doNotSpendAmt', fmt(Math.max(0, totalDailySavings)));
-  _setEl('doNotSpendBreakdown',
-    `Rent KSh ${dailyRentSave.toLocaleString()} + Restock KSh ${dailyRestockSave.toLocaleString()}`);
-
-  // ── Daily savings box ────────────────────────────────────
-  _setEl('dailySaveAmt',     fmt(dailyRentSave));
-  _setEl('dailyRestockAmt',  fmt(dailyRestockSave));
-  _setEl('dailySaveSub',
-    `${Dates.daysInMonth() - Dates.dayOfMonth() + 1} days remaining this month`);
-
-  // ── Rent progress bar ────────────────────────────────────
+  // ── Rent progress ────────────────────────────────────────
   _setEl('rentProgressLabel', `${fmt(monthSaved)} / ${fmt(rent)}`);
   _setEl('rentProgressPct', `${rentProgress}%`);
   const fill = document.getElementById('rentProgressFill');
@@ -780,16 +798,16 @@ function renderDashboard() {
     fill.style.width = `${rentProgress}%`;
     fill.className = `progress-fill ${rentProgress < 50 ? 'danger' : rentProgress < 80 ? 'gold' : ''}`;
   }
+  _setEl('dailySaveAmt', fmt(rentSave));
+  _setEl('dailySaveSub', `${Dates.daysInMonth() - Dates.dayOfMonth() + 1} days remaining this month`);
 
-  // ── Cash flow split (month) ───────────────────────────────
-  const monthRestockSaved = DailySavings.monthRestockSaved();
+  // ── Month split ──────────────────────────────────────────
   const businessMoney = Math.max(0, monthProfit - Expenses.monthTotal()
-    - Withdrawals.monthTotal() - RentTracker.monthSaved() - monthRestockSaved);
-  const personalMoney = Withdrawals.monthTotal();
-  _setEl('cfBusiness', fmt(businessMoney));
-  _setEl('cfPersonal',  fmt(personalMoney));
-  _setEl('cfRentSaved', fmt(RentTracker.monthSaved()));
-  _setEl('cfRestockSaved', fmt(monthRestockSaved));
+    - Withdrawals.monthTotal() - monthSaved);
+  _setEl('cfBusiness',  fmt(businessMoney));
+  _setEl('cfPersonal',  fmt(Withdrawals.monthTotal()));
+  _setEl('cfRentSaved', fmt(monthSaved));
+  _setEl('cfStockVal',  fmt(stockValue));
 
   renderRecentActivity();
   renderWarnings();
@@ -1227,9 +1245,11 @@ function saveRentSettings() {
 
   const settings = Data.getSettings();
   settings.rent           = rent;
-  settings.dailyRentSaving= dailyManual;  // 0 = auto-calculate from rent ÷ days
+  settings.dailyRentSaving= dailyManual;
   settings.restockFund    = restock;
   Data.saveSettings(settings);
+  // ===== FIREBASE: sync settings =====
+  if (window.Firebase) window.Firebase.cloud.saveSettings(settings);
 
   closeModal('rentSettingsModal');
   renderDashboard();
@@ -1415,12 +1435,12 @@ function saveBusinessSettings() {
   const settings = Data.getSettings();
   settings.businessName = name;
   Data.saveSettings(settings);
+  // ===== FIREBASE: sync settings =====
+  if (window.Firebase) window.Firebase.cloud.saveSettings(settings);
 
-  // Update user
   const user = Data.getUser();
   if (user) { user.name = name; Data.saveUser(user); }
 
-  // Update top bar
   const topBarName = document.getElementById('topBarName');
   if (topBarName) topBarName.textContent = name;
 
@@ -1437,11 +1457,7 @@ function handleLogin() {
   const phone = document.getElementById('loginPhone').value.trim();
   const pin   = document.getElementById('loginPin').value.trim();
   if (!phone || !pin) { showToast('Enter your phone and PIN.', 'error'); return; }
-
-  // ===== FIREBASE: firebase.auth() here =====
-  if (Auth.login(phone, pin)) {
-    initApp();
-  }
+  Auth.login(phone, pin); // async — Firebase onAuthStateChanged triggers initApp()
 }
 
 function handleRegister() {
@@ -1451,9 +1467,7 @@ function handleRegister() {
   const pin2  = document.getElementById('regPin2').value.trim();
 
   if (pin !== pin2) { showToast('PINs do not match.', 'error'); return; }
-  if (Auth.register(name, phone, pin)) {
-    initApp();
-  }
+  Auth.register(name, phone, pin); // async — Firebase onAuthStateChanged triggers initApp()
 }
 
 // ============================================================
@@ -1774,16 +1788,17 @@ function initApp() {
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // ===== FIREBASE: Initialize Firebase here =====
-  // import { initializeApp } from 'firebase/app';
-  // const app = initializeApp(firebaseConfig);
+  // Show login page immediately while Firebase checks auth state
+  Pages.show('loginPage');
 
-  // Check if user is logged in
-  if (Auth.isLoggedIn()) {
-    initApp();
-  } else {
-    Pages.show('loginPage');
-  }
+  // Wait for Firebase module to load, then start auth listener
+  // Firebase onAuthStateChanged will call initApp() if user is already logged in
+  const waitForFirebase = setInterval(() => {
+    if (window.Firebase) {
+      clearInterval(waitForFirebase);
+      window.Firebase.initAuth(); // starts onAuthStateChanged listener
+    }
+  }, 50);
 
   // Close modals on overlay click
   document.querySelectorAll('.modal-overlay').forEach(overlay => {

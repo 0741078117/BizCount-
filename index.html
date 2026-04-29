@@ -165,134 +165,134 @@
         <!-- Warnings Area -->
         <div id="warningsArea"></div>
 
-        <!-- Hero: Today's Net Profit -->
+        <!-- Hero: Net Profit -->
         <div class="today-hero" id="heroCard">
-          <div class="label">TODAY'S NET PROFIT</div>
+          <div class="label">NET PROFIT TODAY</div>
           <div class="big-number" id="heroProfitNum">KSh 0</div>
-          <div class="sub-label" id="heroSub">After expenses</div>
+          <div class="sub-label" id="heroSub">Revenue minus stock cost</div>
           <div class="date-badge" id="heroDate">Loading...</div>
         </div>
 
-        <!-- TODAY'S MONEY BREAKDOWN -->
-        <div class="card">
-          <div class="card-title" style="margin-bottom:12px">💡 How Today's Money Breaks Down</div>
+        <!-- THE 5-LINE MONEY CARD -->
+        <div class="card" style="padding:0;overflow:hidden">
 
-          <!-- Revenue row -->
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-            <span style="font-size:0.88rem;color:var(--mid)">💰 Money collected (Revenue)</span>
-            <span style="font-size:0.95rem;font-weight:800;color:var(--dark)" id="bdRevenue">KSh 0</span>
-          </div>
-          <!-- COGS row -->
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-            <span style="font-size:0.88rem;color:var(--mid)">📦 Cost of goods sold (Stock)</span>
-            <span style="font-size:0.95rem;font-weight:800;color:var(--red)" id="bdCOGS">-KSh 0</span>
-          </div>
-          <!-- Gross profit -->
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);background:var(--green-pale);margin:0 -4px;padding:8px 4px;border-radius:6px">
-            <span style="font-size:0.88rem;font-weight:800;color:var(--green)">= Gross Profit</span>
-            <span style="font-size:0.95rem;font-weight:900;color:var(--green)" id="bdGrossProfit">KSh 0</span>
-          </div>
-          <!-- Other expenses -->
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);margin-top:4px">
-            <span style="font-size:0.88rem;color:var(--mid)">🧾 Other expenses</span>
-            <span style="font-size:0.95rem;font-weight:800;color:var(--red)" id="bdExpenses">-KSh 0</span>
-          </div>
-          <!-- Net profit -->
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:2px solid var(--dark);background:var(--bg);margin:0 -4px;padding:8px 4px;border-radius:6px">
-            <span style="font-size:0.9rem;font-weight:800;color:var(--dark)">= Net Profit</span>
-            <span style="font-size:1rem;font-weight:900;color:var(--dark)" id="bdNetProfit">KSh 0</span>
-          </div>
-          <!-- Rent savings deduction -->
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);margin-top:4px">
-            <span style="font-size:0.88rem;color:var(--mid)">🏠 Set aside for rent (daily)</span>
-            <span style="font-size:0.95rem;font-weight:800;color:var(--gold)" id="bdRentSave">-KSh 0</span>
-          </div>
-          <!-- Restock fund deduction -->
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-            <span style="font-size:0.88rem;color:var(--mid)">📦 Set aside for restocking</span>
-            <span style="font-size:0.95rem;font-weight:800;color:var(--gold)" id="bdRestockSave">-KSh 0</span>
-          </div>
-          <!-- Money you can use -->
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 8px;background:var(--green-pale);border:2px solid var(--green);border-radius:8px;margin-top:8px">
-            <div>
-              <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;color:var(--green);letter-spacing:0.4px">✅ Money You Can Use Today</div>
-              <div style="font-size:0.68rem;color:var(--mid);margin-top:2px">After savings are set aside</div>
+          <!-- Row 1: Revenue -->
+          <div class="money-row">
+            <div class="mr-left">
+              <span class="mr-icon">💰</span>
+              <div>
+                <div class="mr-label">Cash Collected Today</div>
+                <div class="mr-sub">Total from all sales</div>
+              </div>
             </div>
-            <span style="font-size:1.3rem;font-weight:900;" id="bdCanUse">KSh 0</span>
+            <span class="mr-value" id="bdRevenue">KSh 0</span>
+          </div>
+
+          <!-- Row 2: Stock Cost -->
+          <div class="money-row deduct">
+            <div class="mr-left">
+              <span class="mr-icon">📦</span>
+              <div>
+                <div class="mr-label">Stock Cost (Buying Price)</div>
+                <div class="mr-sub">What you paid for goods sold</div>
+              </div>
+            </div>
+            <span class="mr-value minus" id="bdCOGS">-KSh 0</span>
+          </div>
+
+          <!-- Row 3: NET PROFIT — highlighted -->
+          <div class="money-row result" id="netProfitRow">
+            <div class="mr-left">
+              <span class="mr-icon">📈</span>
+              <div>
+                <div class="mr-label" style="font-size:0.95rem;font-weight:900">= Net Profit</div>
+                <div class="mr-sub">Your earnings today</div>
+              </div>
+            </div>
+            <span class="mr-value result-val" id="bdNetProfit">KSh 0</span>
+          </div>
+
+          <!-- Row 4: Rent Savings -->
+          <div class="money-row deduct">
+            <div class="mr-left">
+              <span class="mr-icon">🏠</span>
+              <div>
+                <div class="mr-label">Set Aside for Rent</div>
+                <div class="mr-sub">Daily saving for end-of-month rent</div>
+              </div>
+            </div>
+            <span class="mr-value minus" id="bdRentSave">-KSh 0</span>
+          </div>
+
+          <!-- Row 5: CASH YOU CAN USE — big green -->
+          <div class="money-row cash-use" id="cashUseRow">
+            <div class="mr-left">
+              <span class="mr-icon">✅</span>
+              <div>
+                <div class="mr-label" style="font-size:0.95rem;font-weight:900">Cash You Can Use</div>
+                <div class="mr-sub">After rent savings taken out</div>
+              </div>
+            </div>
+            <span class="mr-value cash-val" id="bdCanUse">KSh 0</span>
+          </div>
+
+        </div><!-- end money card -->
+
+        <!-- Stat Strip -->
+        <div class="stat-strip">
+          <div class="ss-item">
+            <div class="ss-icon">🧾</div>
+            <div class="ss-val" id="statExpenses">KSh 0</div>
+            <div class="ss-label">Expenses</div>
+          </div>
+          <div class="ss-divider"></div>
+          <div class="ss-item">
+            <div class="ss-icon">📝</div>
+            <div class="ss-val text-red" id="statDebt">KSh 0</div>
+            <div class="ss-label">Madeni</div>
+          </div>
+          <div class="ss-divider"></div>
+          <div class="ss-item">
+            <div class="ss-icon">📈</div>
+            <div class="ss-val text-green" id="statMonthProfit">KSh 0</div>
+            <div class="ss-label">Month Profit</div>
+          </div>
+          <div class="ss-divider"></div>
+          <div class="ss-item">
+            <div class="ss-icon">📦</div>
+            <div class="ss-val" style="color:var(--blue)" id="statStockVal">KSh 0</div>
+            <div class="ss-label">Stock Value</div>
           </div>
         </div>
 
-        <!-- Stat Grid -->
-        <div class="stat-grid">
-          <div class="stat-card green">
-            <div class="s-icon">💰</div>
-            <div class="s-label">Today's Revenue</div>
-            <div class="s-value text-green" id="statRevenue">KSh 0</div>
-          </div>
-          <div class="stat-card red">
-            <div class="s-icon">📋</div>
-            <div class="s-label">Today's Expenses</div>
-            <div class="s-value text-red" id="statExpenses">KSh 0</div>
-          </div>
-          <div class="stat-card gold">
-            <div class="s-icon">📝</div>
-            <div class="s-label">Madeni (Owed)</div>
-            <div class="s-value text-gold" id="statDebt">KSh 0</div>
-          </div>
-          <div class="stat-card blue">
-            <div class="s-icon">📈</div>
-            <div class="s-label">Month Profit</div>
-            <div class="s-value" style="color:var(--blue)" id="statMonthProfit">KSh 0</div>
-          </div>
-        </div>
-
-        <!-- Do Not Touch Box -->
-        <div class="card" style="border:2px solid var(--red);background:var(--red-light)">
-          <div class="flex items-center gap-1" style="margin-bottom:6px">
-            <span style="font-size:1.3rem">🚫</span>
-            <span style="font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--red)">Do NOT Touch This Money</span>
-          </div>
-          <div style="font-size:1.8rem;font-weight:900;color:var(--red)" id="doNotSpendAmt">KSh 0</div>
-          <div style="font-size:0.78rem;color:var(--mid);margin-top:4px" id="doNotSpendBreakdown">Rent savings + Restock fund</div>
-        </div>
-
-        <!-- Rent & Savings Progress -->
+        <!-- Rent Progress -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title">🏠 Rent & Savings</div>
-            <button class="btn btn-sm btn-secondary" onclick="openModal('rentSettingsModal')">⚙️ Edit</button>
+            <div class="card-title">🏠 Rent Progress This Month</div>
+            <button class="btn btn-sm btn-secondary" onclick="openRentSettings()">⚙️ Edit</button>
           </div>
           <div class="progress-bar-wrap">
             <div class="p-labels">
-              <span>Rent saved this month</span>
+              <span id="rentProgressLabel">KSh 0 / KSh 0</span>
               <span id="rentProgressPct">0%</span>
             </div>
             <div class="progress-bar">
               <div class="progress-fill" id="rentProgressFill" style="width:0%"></div>
             </div>
-            <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="rentProgressLabel">KSh 0 / KSh 0</div>
           </div>
-
-          <!-- Two savings boxes side by side -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
-            <div class="save-box" style="flex-direction:column;align-items:flex-start;gap:4px;padding:12px">
-              <div style="font-size:1.2rem">🏠</div>
-              <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;color:var(--green);letter-spacing:0.3px">Daily Rent Save</div>
-              <div style="font-size:1.1rem;font-weight:900;color:var(--green)" id="dailySaveAmt">KSh 0</div>
-              <div style="font-size:0.65rem;color:var(--mid)" id="dailySaveSub">per day</div>
-            </div>
-            <div class="save-box" style="flex-direction:column;align-items:flex-start;gap:4px;padding:12px;background:var(--gold-light)">
-              <div style="font-size:1.2rem">📦</div>
-              <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;color:#8A5A00;letter-spacing:0.3px">Daily Restock Fund</div>
-              <div style="font-size:1.1rem;font-weight:900;color:#8A5A00" id="dailyRestockAmt">KSh 0</div>
-              <div style="font-size:0.65rem;color:var(--mid)">for buying new stock</div>
+          <div class="save-box" style="margin-top:12px">
+            <div class="save-icon">💵</div>
+            <div class="save-text">
+              <div class="st-label">Save Daily For Rent</div>
+              <div class="st-amount" id="dailySaveAmt">KSh 0</div>
+              <div class="st-sub" id="dailySaveSub">days remaining this month</div>
             </div>
           </div>
         </div>
 
-        <!-- Cash Flow Split -->
+        <!-- This Month Split -->
         <div class="section-header">
-          <h3>💼 Where Did This Month's Money Go?</h3>
+          <h3>💼 This Month's Money</h3>
           <button class="btn btn-sm btn-secondary" onclick="openWithdrawal()">- Personal</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
@@ -300,49 +300,37 @@
             <div class="cf-icon">🏦</div>
             <div class="cf-label">Business Money</div>
             <div class="cf-amount" id="cfBusiness">KSh 0</div>
-            <div style="font-size:0.6rem;color:var(--green);margin-top:2px">Free to use / reinvest</div>
+            <div style="font-size:0.6rem;color:var(--green);margin-top:2px">Free to reinvest</div>
           </div>
           <div class="cf-box personal">
             <div class="cf-icon">👤</div>
             <div class="cf-label">Personal Use</div>
             <div class="cf-amount" id="cfPersonal">KSh 0</div>
-            <div style="font-size:0.6rem;color:var(--red);margin-top:2px">Withdrawals taken</div>
+            <div style="font-size:0.6rem;color:var(--red);margin-top:2px">Taken out</div>
           </div>
           <div style="background:var(--green-pale);border:2px solid var(--green);border-radius:var(--radius-sm);padding:12px;text-align:center">
-            <div style="font-size:1.3rem">🏠</div>
-            <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;color:var(--green);margin:3px 0">Rent Saved</div>
+            <div style="font-size:1.2rem">🏠</div>
+            <div style="font-size:0.6rem;font-weight:800;text-transform:uppercase;color:var(--green);margin:3px 0">Rent Saved</div>
             <div style="font-size:1rem;font-weight:900;color:var(--green)" id="cfRentSaved">KSh 0</div>
           </div>
-          <div style="background:var(--gold-light);border:2px solid var(--gold);border-radius:var(--radius-sm);padding:12px;text-align:center">
-            <div style="font-size:1.3rem">📦</div>
-            <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;color:#8A5A00;margin:3px 0">Restock Fund</div>
-            <div style="font-size:1rem;font-weight:900;color:#8A5A00" id="cfRestockSaved">KSh 0</div>
+          <div style="background:var(--blue-light);border:2px solid var(--blue);border-radius:var(--radius-sm);padding:12px;text-align:center">
+            <div style="font-size:1.2rem">📦</div>
+            <div style="font-size:0.6rem;font-weight:800;text-transform:uppercase;color:var(--blue);margin:3px 0">Stock Value</div>
+            <div style="font-size:1rem;font-weight:900;color:var(--blue)" id="cfStockVal">KSh 0</div>
           </div>
         </div>
 
         <!-- Quick Actions -->
-        <div class="section-header">
-          <h3>⚡ Quick Actions</h3>
-        </div>
+        <div class="section-header"><h3>⚡ Quick Actions</h3></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-          <button class="btn btn-primary" onclick="openRecordSale()" style="font-size:0.9rem;padding:14px">
-            💰 Record Sale
-          </button>
-          <button class="btn btn-secondary" onclick="openAddExpense()" style="font-size:0.9rem;padding:14px">
-            📋 Add Expense
-          </button>
-          <button class="btn btn-outline" onclick="openAddDebt()" style="font-size:0.9rem;padding:14px">
-            📝 Add Madeni
-          </button>
-          <button class="btn btn-outline" onclick="openAddProduct()" style="font-size:0.9rem;padding:14px">
-            📦 Add Product
-          </button>
+          <button class="btn btn-primary" onclick="openRecordSale()" style="font-size:0.9rem;padding:14px">💰 Record Sale</button>
+          <button class="btn btn-secondary" onclick="openAddExpense()" style="font-size:0.9rem;padding:14px">📋 Add Expense</button>
+          <button class="btn btn-outline" onclick="openAddDebt()" style="font-size:0.9rem;padding:14px">📝 Add Madeni</button>
+          <button class="btn btn-outline" onclick="openAddProduct()" style="font-size:0.9rem;padding:14px">📦 Add Product</button>
         </div>
 
         <!-- Recent Activity -->
-        <div class="section-header">
-          <h3>📊 Recent Activity</h3>
-        </div>
+        <div class="section-header"><h3>📊 Recent Activity</h3></div>
         <div class="card" style="padding:12px 16px">
           <div id="recentActivity"></div>
         </div>
@@ -359,6 +347,22 @@
           <div style="display:flex;gap:8px">
             <button class="btn btn-sm btn-secondary" onclick="openRestockPicker()">📦 Restock</button>
             <button class="btn btn-sm btn-primary" onclick="openAddProduct()">+ Add</button>
+          </div>
+        </div>
+
+        <!-- Stock Value Summary -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div class="stat-card blue" style="border-left:4px solid var(--blue)">
+            <div class="s-icon">🏪</div>
+            <div class="s-label">Money in Stock</div>
+            <div class="s-value" style="color:var(--blue)" id="prodStockCost">KSh 0</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:3px">What you paid for all goods</div>
+          </div>
+          <div class="stat-card green">
+            <div class="s-icon">💰</div>
+            <div class="s-label">If You Sold All Stock</div>
+            <div class="s-value text-green" id="prodStockSellVal">KSh 0</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:3px">Total selling value</div>
           </div>
         </div>
 
@@ -937,8 +941,11 @@
   </div>
 </div>
 
-<!-- Scripts -->
-<script src="js/app.js"></script>
+<!-- Firebase (loaded as ES module) -->
+<script type="module" src="js/firebase.js"></script>
+
+<!-- App (must load after Firebase module registers window.Firebase) -->
+<script src="js/app.js" defer></script>
 
 </body>
 </html>
