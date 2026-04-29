@@ -165,12 +165,61 @@
         <!-- Warnings Area -->
         <div id="warningsArea"></div>
 
-        <!-- Hero: Today's Profit -->
+        <!-- Hero: Today's Net Profit -->
         <div class="today-hero" id="heroCard">
           <div class="label">TODAY'S NET PROFIT</div>
           <div class="big-number" id="heroProfitNum">KSh 0</div>
-          <div class="sub-label">After expenses</div>
+          <div class="sub-label" id="heroSub">After expenses</div>
           <div class="date-badge" id="heroDate">Loading...</div>
+        </div>
+
+        <!-- TODAY'S MONEY BREAKDOWN -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">💡 How Today's Money Breaks Down</div>
+
+          <!-- Revenue row -->
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:0.88rem;color:var(--mid)">💰 Money collected (Revenue)</span>
+            <span style="font-size:0.95rem;font-weight:800;color:var(--dark)" id="bdRevenue">KSh 0</span>
+          </div>
+          <!-- COGS row -->
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:0.88rem;color:var(--mid)">📦 Cost of goods sold (Stock)</span>
+            <span style="font-size:0.95rem;font-weight:800;color:var(--red)" id="bdCOGS">-KSh 0</span>
+          </div>
+          <!-- Gross profit -->
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);background:var(--green-pale);margin:0 -4px;padding:8px 4px;border-radius:6px">
+            <span style="font-size:0.88rem;font-weight:800;color:var(--green)">= Gross Profit</span>
+            <span style="font-size:0.95rem;font-weight:900;color:var(--green)" id="bdGrossProfit">KSh 0</span>
+          </div>
+          <!-- Other expenses -->
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);margin-top:4px">
+            <span style="font-size:0.88rem;color:var(--mid)">🧾 Other expenses</span>
+            <span style="font-size:0.95rem;font-weight:800;color:var(--red)" id="bdExpenses">-KSh 0</span>
+          </div>
+          <!-- Net profit -->
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:2px solid var(--dark);background:var(--bg);margin:0 -4px;padding:8px 4px;border-radius:6px">
+            <span style="font-size:0.9rem;font-weight:800;color:var(--dark)">= Net Profit</span>
+            <span style="font-size:1rem;font-weight:900;color:var(--dark)" id="bdNetProfit">KSh 0</span>
+          </div>
+          <!-- Rent savings deduction -->
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);margin-top:4px">
+            <span style="font-size:0.88rem;color:var(--mid)">🏠 Set aside for rent (daily)</span>
+            <span style="font-size:0.95rem;font-weight:800;color:var(--gold)" id="bdRentSave">-KSh 0</span>
+          </div>
+          <!-- Restock fund deduction -->
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:0.88rem;color:var(--mid)">📦 Set aside for restocking</span>
+            <span style="font-size:0.95rem;font-weight:800;color:var(--gold)" id="bdRestockSave">-KSh 0</span>
+          </div>
+          <!-- Money you can use -->
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 8px;background:var(--green-pale);border:2px solid var(--green);border-radius:8px;margin-top:8px">
+            <div>
+              <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;color:var(--green);letter-spacing:0.4px">✅ Money You Can Use Today</div>
+              <div style="font-size:0.68rem;color:var(--mid);margin-top:2px">After savings are set aside</div>
+            </div>
+            <span style="font-size:1.3rem;font-weight:900;" id="bdCanUse">KSh 0</span>
+          </div>
         </div>
 
         <!-- Stat Grid -->
@@ -197,57 +246,77 @@
           </div>
         </div>
 
-        <!-- Do Not Spend Box -->
+        <!-- Do Not Touch Box -->
         <div class="card" style="border:2px solid var(--red);background:var(--red-light)">
-          <div class="flex items-center gap-1" style="margin-bottom:8px">
+          <div class="flex items-center gap-1" style="margin-bottom:6px">
             <span style="font-size:1.3rem">🚫</span>
-            <span style="font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--red)">Money You Should NOT Spend</span>
+            <span style="font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--red)">Do NOT Touch This Money</span>
           </div>
           <div style="font-size:1.8rem;font-weight:900;color:var(--red)" id="doNotSpendAmt">KSh 0</div>
-          <div style="font-size:0.8rem;color:var(--mid);margin-top:4px">This money is needed for rent savings</div>
+          <div style="font-size:0.78rem;color:var(--mid);margin-top:4px" id="doNotSpendBreakdown">Rent savings + Restock fund</div>
         </div>
 
-        <!-- Rent Progress -->
+        <!-- Rent & Savings Progress -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title">🏠 Rent Progress</div>
-            <button class="btn btn-sm btn-secondary" onclick="openModal('rentSettingsModal')">Set Rent</button>
+            <div class="card-title">🏠 Rent & Savings</div>
+            <button class="btn btn-sm btn-secondary" onclick="openModal('rentSettingsModal')">⚙️ Edit</button>
           </div>
           <div class="progress-bar-wrap">
             <div class="p-labels">
-              <span id="rentProgressLabel">KSh 0 / KSh 0</span>
+              <span>Rent saved this month</span>
               <span id="rentProgressPct">0%</span>
             </div>
             <div class="progress-bar">
               <div class="progress-fill" id="rentProgressFill" style="width:0%"></div>
             </div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="rentProgressLabel">KSh 0 / KSh 0</div>
           </div>
 
-          <div class="save-box" style="margin-top:12px">
-            <div class="save-icon">💵</div>
-            <div class="save-text">
-              <div class="st-label">Save Daily For Rent</div>
-              <div class="st-amount" id="dailySaveAmt">KSh 0</div>
-              <div class="st-sub" id="dailySaveSub">calculated from days remaining</div>
+          <!-- Two savings boxes side by side -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+            <div class="save-box" style="flex-direction:column;align-items:flex-start;gap:4px;padding:12px">
+              <div style="font-size:1.2rem">🏠</div>
+              <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;color:var(--green);letter-spacing:0.3px">Daily Rent Save</div>
+              <div style="font-size:1.1rem;font-weight:900;color:var(--green)" id="dailySaveAmt">KSh 0</div>
+              <div style="font-size:0.65rem;color:var(--mid)" id="dailySaveSub">per day</div>
+            </div>
+            <div class="save-box" style="flex-direction:column;align-items:flex-start;gap:4px;padding:12px;background:var(--gold-light)">
+              <div style="font-size:1.2rem">📦</div>
+              <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;color:#8A5A00;letter-spacing:0.3px">Daily Restock Fund</div>
+              <div style="font-size:1.1rem;font-weight:900;color:#8A5A00" id="dailyRestockAmt">KSh 0</div>
+              <div style="font-size:0.65rem;color:var(--mid)">for buying new stock</div>
             </div>
           </div>
         </div>
 
         <!-- Cash Flow Split -->
         <div class="section-header">
-          <h3>💼 Cash Flow This Month</h3>
+          <h3>💼 Where Did This Month's Money Go?</h3>
           <button class="btn btn-sm btn-secondary" onclick="openWithdrawal()">- Personal</button>
         </div>
-        <div class="cashflow-split">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
           <div class="cf-box business">
             <div class="cf-icon">🏦</div>
             <div class="cf-label">Business Money</div>
             <div class="cf-amount" id="cfBusiness">KSh 0</div>
+            <div style="font-size:0.6rem;color:var(--green);margin-top:2px">Free to use / reinvest</div>
           </div>
           <div class="cf-box personal">
             <div class="cf-icon">👤</div>
             <div class="cf-label">Personal Use</div>
             <div class="cf-amount" id="cfPersonal">KSh 0</div>
+            <div style="font-size:0.6rem;color:var(--red);margin-top:2px">Withdrawals taken</div>
+          </div>
+          <div style="background:var(--green-pale);border:2px solid var(--green);border-radius:var(--radius-sm);padding:12px;text-align:center">
+            <div style="font-size:1.3rem">🏠</div>
+            <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;color:var(--green);margin:3px 0">Rent Saved</div>
+            <div style="font-size:1rem;font-weight:900;color:var(--green)" id="cfRentSaved">KSh 0</div>
+          </div>
+          <div style="background:var(--gold-light);border:2px solid var(--gold);border-radius:var(--radius-sm);padding:12px;text-align:center">
+            <div style="font-size:1.3rem">📦</div>
+            <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;color:#8A5A00;margin:3px 0">Restock Fund</div>
+            <div style="font-size:1rem;font-weight:900;color:#8A5A00" id="cfRestockSaved">KSh 0</div>
           </div>
         </div>
 
@@ -287,7 +356,10 @@
       <div class="main-content">
         <div class="section-header">
           <h2>My Products</h2>
-          <button class="btn btn-sm btn-primary" onclick="openAddProduct()">+ Add</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-secondary" onclick="openRestockPicker()">📦 Restock</button>
+            <button class="btn btn-sm btn-primary" onclick="openAddProduct()">+ Add</button>
+          </div>
         </div>
 
         <div id="productEmpty" class="empty-state hidden">
@@ -387,11 +459,19 @@
         <!-- Financial Settings -->
         <div class="settings-section">
           <div class="card-title" style="margin-bottom:8px;padding-left:4px">Finance</div>
-          <div class="settings-item" onclick="openModal('rentSettingsModal')">
+          <div class="settings-item" onclick="openRentSettings()">
             <div class="si-icon">🏠</div>
             <div class="si-text">
               <div class="si-label">Monthly Rent</div>
               <div class="si-sub" id="settingRentDisplay">Not set</div>
+            </div>
+            <span class="si-arrow">›</span>
+          </div>
+          <div class="settings-item" onclick="openRentSettings()">
+            <div class="si-icon">📦</div>
+            <div class="si-text">
+              <div class="si-label">Daily Restock Fund</div>
+              <div class="si-sub" id="settingRestockDisplay">KSh 200/day</div>
             </div>
             <span class="si-arrow">›</span>
           </div>
@@ -414,6 +494,19 @@
             <button class="btn btn-gold" onclick="openPaywall()">
               💳 Upgrade — KSh 200/month
             </button>
+          </div>
+        </div>
+
+        <!-- Export -->
+        <div class="settings-section">
+          <div class="card-title" style="margin-bottom:8px;padding-left:4px">Reports</div>
+          <div class="settings-item" onclick="openModal('exportModal')">
+            <div class="si-icon" style="background:var(--gold-light)">📊</div>
+            <div class="si-text">
+              <div class="si-label">Export Business Report</div>
+              <div class="si-sub">Download CSV or print monthly report</div>
+            </div>
+            <span class="si-arrow">›</span>
           </div>
         </div>
 
@@ -467,6 +560,18 @@
     <div class="modal-handle"></div>
     <div class="modal-title">📦 Add New Product</div>
     <form id="addProductForm" onsubmit="return false">
+
+      <!-- Icon Picker -->
+      <div class="form-group">
+        <label>Choose an Icon</label>
+        <div class="selected-icon-preview">
+          <span class="sip-icon" id="selectedIconPreview">📦</span>
+          <span class="sip-text">Tap any icon below to select it</span>
+        </div>
+        <div class="icon-picker-grid" id="iconPickerGrid"></div>
+        <input type="hidden" id="newProductIcon" value="📦" />
+      </div>
+
       <div class="form-group">
         <label>Product Name</label>
         <input type="text" id="newProductName" placeholder="e.g. Unga (2kg)" />
@@ -501,6 +606,18 @@
     <div class="modal-handle"></div>
     <div class="modal-title">✏️ Edit Product</div>
     <input type="hidden" id="editProductId" />
+
+    <!-- Icon Picker -->
+    <div class="form-group">
+      <label>Product Icon</label>
+      <div class="selected-icon-preview">
+        <span class="sip-icon" id="editSelectedIconPreview">📦</span>
+        <span class="sip-text">Tap any icon below to change it</span>
+      </div>
+      <div class="icon-picker-grid" id="editIconPickerGrid"></div>
+      <input type="hidden" id="editProductIcon" value="📦" />
+    </div>
+
     <div class="form-group">
       <label>Product Name</label>
       <input type="text" id="editProductName" />
@@ -524,6 +641,7 @@
       </div>
     </div>
     <button class="btn btn-primary" onclick="submitEditProduct()">✅ Save Changes</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="openRestockFromEdit()">📦 Restock This Product</button>
     <button class="btn btn-danger" style="margin-top:8px" onclick="deleteProductFromEdit()">🗑️ Delete Product</button>
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('editProductModal')">Cancel</button>
   </div>
@@ -658,13 +776,34 @@
 <div id="rentSettingsModal" class="modal-overlay">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">🏠 Set Monthly Rent</div>
-    <p style="font-size:0.88rem;margin-bottom:16px;color:var(--mid)">BizCount will calculate how much you need to save daily to pay your rent at end of month.</p>
+    <div class="modal-title">🏠 Rent & Savings Settings</div>
+    <p style="font-size:0.88rem;margin-bottom:16px;color:var(--mid)">Set your rent and daily savings. BizCount will deduct these from your daily profit automatically.</p>
+
     <div class="form-group">
       <label>Monthly Rent (KSh)</label>
       <input type="number" id="rentInput" placeholder="e.g. 8000" inputmode="decimal" min="0" />
+      <small style="color:var(--muted);margin-top:4px;display:block">Used to calculate how much to save per day</small>
     </div>
-    <button class="btn btn-primary" onclick="saveRentSettings()">✅ Save Rent Amount</button>
+
+    <div class="form-group">
+      <label>Daily Rent Saving (KSh) — Optional</label>
+      <input type="number" id="rentDailyInput" placeholder="Leave 0 to auto-calculate from rent" inputmode="decimal" min="0" />
+      <small style="color:var(--muted);margin-top:4px;display:block">e.g. KSh 200/day. If 0, we divide monthly rent by days left.</small>
+    </div>
+
+    <div class="form-group">
+      <label>Daily Restock Fund (KSh)</label>
+      <input type="number" id="restockFundInput" placeholder="e.g. 200" inputmode="decimal" min="0" value="200" />
+      <small style="color:var(--muted);margin-top:4px;display:block">Money set aside daily to buy new stock. Comes from your profit.</small>
+    </div>
+
+    <div style="background:var(--green-pale);border-radius:8px;padding:10px 12px;margin-bottom:14px">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--green)">
+        💡 Both amounts are subtracted from your daily profit. What's left is yours to use.
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveRentSettings()">✅ Save Settings</button>
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('rentSettingsModal')">Cancel</button>
   </div>
 </div>
@@ -730,6 +869,73 @@
   </div>
 </div>
 
+
+<!-- RESTOCK PRODUCT -->
+<div id="restockModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📦 Restock Product</div>
+    <input type="hidden" id="restockProductId" />
+    <div class="restock-product-info" id="restockProductInfo">
+      <div class="rp-icon" id="restockIcon">📦</div>
+      <div>
+        <div class="rp-name" id="restockName">Product Name</div>
+        <div class="rp-stock" id="restockCurrentStock">Current stock: 0 units</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>How many units are you adding?</label>
+      <input type="number" id="restockQty" placeholder="e.g. 20" inputmode="numeric" min="1" />
+    </div>
+    <div class="form-group">
+      <label>Cost of Restocking (KSh) — Optional</label>
+      <input type="number" id="restockCost" placeholder="Total amount spent" inputmode="decimal" min="0" />
+    </div>
+    <div style="background:var(--green-pale);border-radius:8px;padding:10px 12px;margin-bottom:14px">
+      <div id="restockPreview" style="font-size:0.85rem;font-weight:700;color:var(--green)">
+        New total stock will show here
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="submitRestock()">✅ Confirm Restock</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('restockModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- EXPORT REPORT -->
+<div id="exportModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📊 Export Business Report</div>
+    <p style="font-size:0.88rem;margin-bottom:16px;color:var(--mid)">Choose what to export. Reports include all your sales, products, debts and expenses.</p>
+
+    <div class="form-group">
+      <label>Report Period</label>
+      <select id="exportPeriod">
+        <option value="today">Today</option>
+        <option value="month" selected>This Month</option>
+        <option value="all">All Time</option>
+      </select>
+    </div>
+
+    <button class="export-option green-opt" onclick="exportCSV()">
+      <div class="eo-icon">📗</div>
+      <div class="eo-text">
+        <div class="eo-label">Download CSV (Excel)</div>
+        <div class="eo-sub">Opens in Excel, Google Sheets, or any spreadsheet app</div>
+      </div>
+    </button>
+
+    <button class="export-option gold-opt" onclick="exportPrintReport()">
+      <div class="eo-icon">🖨️</div>
+      <div class="eo-text">
+        <div class="eo-label">Print / Save as PDF</div>
+        <div class="eo-sub">Opens a printable report in your browser</div>
+      </div>
+    </button>
+
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('exportModal')">Cancel</button>
+  </div>
+</div>
 
 <!-- Scripts -->
 <script src="js/app.js"></script>

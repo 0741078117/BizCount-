@@ -51,7 +51,7 @@ const Data = {
   getSales:      () => DB.get('sales',      []),
   getDebts:      () => DB.get('debts',      []),
   getExpenses:   () => DB.get('expenses',   []),
-  getSettings:   () => DB.get('settings',   { rent: 0, businessName: 'My Shop', phone: '' }),
+  getSettings:   () => DB.get('settings',   { rent: 0, businessName: 'My Shop', phone: '', restockFund: 200, dailyRentSaving: 0 }),
   getWithdrawals:() => DB.get('withdrawals',[]),
   getTrial:      () => DB.get('trial',      null),
 
@@ -70,6 +70,48 @@ const Data = {
 // ============================================================
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+
+// ============================================================
+// ICON LIBRARY
+// ============================================================
+
+const PRODUCT_ICONS = [
+  '📦','🌾','🍬','🫙','🍞','🥛','🥩','🥬','🧅','🧄',
+  '🍅','🍋','🍌','🍎','🍇','🥑','🌽','🥕','🫘','🧃',
+  '🥤','☕','🍫','🍭','🧂','🧴','🧹','🧺','🧻','🪣',
+  '👗','👟','👔','🧢','👜','🕶️','⌚','📱','💊','🩺',
+  '🔑','🪑','💡','🔋','🖊️','📚','🧷','🪡','🌸','🎀',
+  '🏪','🛒','💰','🤝','🎁','🚗','⭐','🔥','💎','🌟',
+];
+
+// ============================================================
+// ICON PICKER RENDERER
+// ============================================================
+
+function renderIconPicker(gridId, previewId, hiddenInputId, selectedIcon = '📦') {
+  const grid = document.getElementById(gridId);
+  const preview = document.getElementById(previewId);
+  const input = document.getElementById(hiddenInputId);
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  PRODUCT_ICONS.forEach(icon => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `icon-picker-btn${icon === selectedIcon ? ' selected' : ''}`;
+    btn.textContent = icon;
+    btn.addEventListener('click', () => {
+      grid.querySelectorAll('.icon-picker-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      if (preview) preview.textContent = icon;
+      if (input)   input.value = icon;
+    });
+    grid.appendChild(btn);
+  });
+
+  if (preview) preview.textContent = selectedIcon;
+  if (input)   input.value = selectedIcon;
+}
 
 // ============================================================
 // DATE HELPERS
@@ -377,6 +419,14 @@ const Sales = {
       .reduce((sum, s) => sum + s.revenue, 0);
   },
 
+  // Cost of goods sold today (buying price × qty) — what you paid for the stock you sold
+  todayCOGS: () => {
+    const today = Dates.today();
+    return Data.getSales()
+      .filter(s => s.date === today)
+      .reduce((sum, s) => sum + (s.buyPrice * s.qty), 0);
+  },
+
   monthTotal: () => {
     const month = Dates.today().slice(0, 7);
     return Data.getSales()
@@ -527,6 +577,74 @@ const Expenses = {
 };
 
 // ============================================================
+// DAILY SAVINGS TRACKER
+// Rent savings + Restock fund are set aside from daily profit
+// ============================================================
+
+const DailySavings = {
+  // Get today's savings records (rent + restock)
+  getAll: () => DB.get('daily_savings', []),
+  saveAll: (d) => DB.set('daily_savings', d),
+
+  // Record that savings were set aside today
+  setAsideToday: () => {
+    const settings = Data.getSettings();
+    const rentDaily   = parseFloat(settings.dailyRentSaving) || RentTracker.dailySavingsNeeded();
+    const restockDaily= parseFloat(settings.restockFund) || 0;
+    const today = Dates.today();
+    const all = DailySavings.getAll();
+
+    // Don't double-record same day
+    if (all.find(s => s.date === today)) return;
+
+    all.push({
+      id: uid(),
+      date: today,
+      rentAmount: rentDaily,
+      restockAmount: restockDaily,
+      total: rentDaily + restockDaily,
+      createdAt: Dates.now(),
+    });
+    DailySavings.saveAll(all);
+  },
+
+  todayRecord: () => {
+    return DailySavings.getAll().find(s => s.date === Dates.today()) || null;
+  },
+
+  todayRentSaving: () => {
+    const r = DailySavings.todayRecord();
+    return r ? r.rentAmount : 0;
+  },
+
+  todayRestockSaving: () => {
+    const r = DailySavings.todayRecord();
+    return r ? r.restockAmount : 0;
+  },
+
+  todayTotal: () => {
+    const r = DailySavings.todayRecord();
+    return r ? r.total : 0;
+  },
+
+  // Total rent saved this month (from daily_savings records)
+  monthRentSaved: () => {
+    const month = Dates.today().slice(0, 7);
+    return DailySavings.getAll()
+      .filter(s => s.date.startsWith(month))
+      .reduce((sum, s) => sum + s.rentAmount, 0);
+  },
+
+  // Total restock fund this month
+  monthRestockSaved: () => {
+    const month = Dates.today().slice(0, 7);
+    return DailySavings.getAll()
+      .filter(s => s.date.startsWith(month))
+      .reduce((sum, s) => sum + s.restockAmount, 0);
+  },
+};
+
+// ============================================================
 // RENT / SAVINGS TRACKER
 // ============================================================
 
@@ -534,19 +652,15 @@ const RentTracker = {
   dailySavingsNeeded: () => {
     const settings = Data.getSettings();
     const rent = parseFloat(settings.rent) || 0;
+    // If user set a manual daily amount, use that
+    if (settings.dailyRentSaving && settings.dailyRentSaving > 0) {
+      return parseFloat(settings.dailyRentSaving);
+    }
     const daysLeft = Dates.daysInMonth() - Dates.dayOfMonth() + 1;
     return daysLeft > 0 ? Math.ceil(rent / daysLeft) : rent;
   },
 
-  monthSaved: () => {
-    // Uses month profit minus expenses as proxy for saved amount
-    const profit  = Sales.monthTotal();
-    const expenses = Expenses.monthTotal();
-    const withdrawals = Data.getWithdrawals()
-      .filter(w => w.date.startsWith(Dates.today().slice(0,7)))
-      .reduce((s, w) => s + w.amount, 0);
-    return Math.max(0, profit - expenses - withdrawals);
-  },
+  monthSaved: () => DailySavings.monthRentSaved(),
 
   rentProgress: () => {
     const settings = Data.getSettings();
@@ -586,55 +700,80 @@ const Withdrawals = {
 // ============================================================
 
 function renderDashboard() {
-  const todayProfit  = Sales.todayTotal();
-  const todayRevenue = Sales.todayRevenue();
-  const todayExpenses= Expenses.todayTotal();
-  const monthProfit  = Sales.monthTotal();
-  const totalDebt    = Debts.totalOwed();
-  const dailySave    = RentTracker.dailySavingsNeeded();
-  const rentProgress = RentTracker.rentProgress();
-  const settings     = Data.getSettings();
-  const withdrawal   = Withdrawals.todayTotal();
+  const settings      = Data.getSettings();
 
-  // Net today
-  const netToday = todayProfit - todayExpenses;
+  // ── Revenue & costs ──────────────────────────────────────
+  const todayRevenue  = Sales.todayRevenue();            // Total money collected
+  const todayCOGS     = Sales.todayCOGS();               // Cost of goods sold (buying prices)
+  const todayGrossProfit = todayRevenue - todayCOGS;     // Gross profit (sell − buy)
+  const todayExpenses = Expenses.todayTotal();           // Other expenses (transport, etc.)
+  const todayNetProfit= todayGrossProfit - todayExpenses;// Profit after all expenses
 
-  // Hero
-  const heroNum = document.getElementById('heroProfitNum');
+  // ── Savings deducted from today's profit ─────────────────
+  const dailyRentSave    = RentTracker.dailySavingsNeeded();
+  const dailyRestockSave = parseFloat(settings.restockFund) || 0;
+  const totalDailySavings= dailyRentSave + dailyRestockSave;
+
+  // Money you can actually use = net profit minus what you must set aside
+  const moneyYouCanUse   = todayNetProfit - totalDailySavings;
+
+  // ── Month totals ─────────────────────────────────────────
+  const monthProfit   = Sales.monthTotal();
+  const monthRevenue  = Sales.monthRevenue();
+  const totalDebt     = Debts.totalOwed();
+  const rentProgress  = RentTracker.rentProgress();
+  const rent          = parseFloat(settings.rent) || 0;
+  const monthSaved    = RentTracker.monthSaved();
+
+  // ── Hero card ─────────────────────────────────────────────
+  const heroNum  = document.getElementById('heroProfitNum');
+  const heroSub  = document.getElementById('heroSub');
   const heroDate = document.getElementById('heroDate');
-  if (heroNum) heroNum.textContent = fmt(netToday);
+  if (heroNum)  heroNum.textContent  = fmt(todayNetProfit);
+  if (heroSub)  heroSub.textContent  = todayNetProfit >= 0 ? 'Profit after all expenses' : 'You spent more than you earned';
   if (heroDate) {
-    const now = new Date();
-    heroDate.textContent = now.toLocaleDateString('en-KE', { weekday:'long', day:'numeric', month:'long' });
+    heroDate.textContent = new Date().toLocaleDateString('en-KE', { weekday:'long', day:'numeric', month:'long' });
   }
-
-  // Set color based on profit
   const hero = document.getElementById('heroCard');
   if (hero) {
-    hero.style.background = netToday >= 0
+    hero.style.background = todayNetProfit >= 0
       ? 'linear-gradient(135deg, var(--green) 0%, #0F5230 100%)'
       : 'linear-gradient(135deg, #C0392B 0%, #922B21 100%)';
   }
 
-  // Stat cards
+  // ── Money Breakdown card ──────────────────────────────────
+  _setEl('bdRevenue',      fmt(todayRevenue));
+  _setEl('bdCOGS',        `-${fmt(todayCOGS)}`);
+  _setEl('bdGrossProfit',  fmt(todayGrossProfit));
+  _setEl('bdExpenses',    `-${fmt(todayExpenses)}`);
+  _setEl('bdNetProfit',    fmt(todayNetProfit));
+  _setEl('bdRentSave',    `-${fmt(dailyRentSave)}`);
+  _setEl('bdRestockSave', `-${fmt(dailyRestockSave)}`);
+  _setEl('bdCanUse',       fmt(moneyYouCanUse));
+
+  // Colour the "can use" number
+  const canUseEl = document.getElementById('bdCanUse');
+  if (canUseEl) canUseEl.style.color = moneyYouCanUse >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // ── Stat cards ───────────────────────────────────────────
   _setEl('statRevenue',    fmt(todayRevenue));
   _setEl('statExpenses',   fmt(todayExpenses));
   _setEl('statDebt',       fmt(totalDebt));
   _setEl('statMonthProfit',fmt(monthProfit));
 
-  // Do Not Spend money
-  const doNotSpend = Math.max(0, dailySave - Withdrawals.todayTotal());
-  _setEl('doNotSpendAmt', fmt(doNotSpend));
+  // ── Do Not Touch box ─────────────────────────────────────
+  _setEl('doNotSpendAmt', fmt(Math.max(0, totalDailySavings)));
+  _setEl('doNotSpendBreakdown',
+    `Rent KSh ${dailyRentSave.toLocaleString()} + Restock KSh ${dailyRestockSave.toLocaleString()}`);
 
-  // Daily save box
-  _setEl('dailySaveAmt', fmt(dailySave));
-  _setEl('dailySaveSub', `for ${Dates.daysInMonth() - Dates.dayOfMonth() + 1} days remaining this month`);
+  // ── Daily savings box ────────────────────────────────────
+  _setEl('dailySaveAmt',     fmt(dailyRentSave));
+  _setEl('dailyRestockAmt',  fmt(dailyRestockSave));
+  _setEl('dailySaveSub',
+    `${Dates.daysInMonth() - Dates.dayOfMonth() + 1} days remaining this month`);
 
-  // Rent progress
-  const settings2 = Data.getSettings();
-  const rent = parseFloat(settings2.rent) || 0;
-  const saved = RentTracker.monthSaved();
-  _setEl('rentProgressLabel', `${fmt(saved)} / ${fmt(rent)}`);
+  // ── Rent progress bar ────────────────────────────────────
+  _setEl('rentProgressLabel', `${fmt(monthSaved)} / ${fmt(rent)}`);
   _setEl('rentProgressPct', `${rentProgress}%`);
   const fill = document.getElementById('rentProgressFill');
   if (fill) {
@@ -642,16 +781,17 @@ function renderDashboard() {
     fill.className = `progress-fill ${rentProgress < 50 ? 'danger' : rentProgress < 80 ? 'gold' : ''}`;
   }
 
-  // Cash flow split
-  const businessMoney = Math.max(0, monthProfit - Expenses.monthTotal() - Withdrawals.monthTotal());
+  // ── Cash flow split (month) ───────────────────────────────
+  const monthRestockSaved = DailySavings.monthRestockSaved();
+  const businessMoney = Math.max(0, monthProfit - Expenses.monthTotal()
+    - Withdrawals.monthTotal() - RentTracker.monthSaved() - monthRestockSaved);
   const personalMoney = Withdrawals.monthTotal();
   _setEl('cfBusiness', fmt(businessMoney));
   _setEl('cfPersonal',  fmt(personalMoney));
+  _setEl('cfRentSaved', fmt(RentTracker.monthSaved()));
+  _setEl('cfRestockSaved', fmt(monthRestockSaved));
 
-  // Recent transactions
   renderRecentActivity();
-
-  // Warnings
   renderWarnings();
 }
 
@@ -727,6 +867,7 @@ function renderSettings() {
   _setEl('settingBusinessName', settings.businessName || 'My Shop');
   _setEl('settingPhone', user ? user.phone : '');
   _setEl('settingRentDisplay', fmt(settings.rent || 0));
+  _setEl('settingRestockDisplay', fmt(settings.restockFund || 0));
 
   const trial = Data.getTrial();
   const statusEl = document.getElementById('subscriptionStatus');
@@ -774,6 +915,7 @@ function openPaywall() {
 
 function openAddProduct() {
   if (Trial.checkPaywall()) return;
+  renderIconPicker('iconPickerGrid', 'selectedIconPreview', 'newProductIcon', '📦');
   openModal('addProductModal');
 }
 
@@ -786,6 +928,7 @@ function openEditProduct(id) {
   document.getElementById('editSellPrice').value = p.sellPrice;
   document.getElementById('editQuantity').value = p.quantity;
   document.getElementById('editLowStock').value = p.lowStockAt;
+  renderIconPicker('editIconPickerGrid', 'editSelectedIconPreview', 'editProductIcon', p.icon || '📦');
   openModal('editProductModal');
 }
 
@@ -795,8 +938,7 @@ function submitAddProduct() {
   const sell  = document.getElementById('newSellPrice').value;
   const qty   = document.getElementById('newQuantity').value;
   const low   = document.getElementById('newLowStock').value || 5;
-  const icons = ['📦','🥬','👗','🧴','🥩','🛒','🍞','🧺','👟','🍫','🥤','🧃'];
-  const icon  = icons[Math.floor(Math.random() * icons.length)];
+  const icon  = document.getElementById('newProductIcon').value || '📦';
 
   if (!name || !buy || !sell) { showToast('Please fill in name, buy price, sell price.', 'error'); return; }
   if (parseFloat(sell) < parseFloat(buy)) {
@@ -818,13 +960,107 @@ function submitEditProduct() {
   const sell = document.getElementById('editSellPrice').value;
   const qty  = document.getElementById('editQuantity').value;
   const low  = document.getElementById('editLowStock').value;
+  const icon = document.getElementById('editProductIcon').value || '📦';
 
   if (!name || !buy || !sell) { showToast('Please fill all fields.', 'error'); return; }
-  Products.update(id, { name, buyPrice: parseFloat(buy), sellPrice: parseFloat(sell), quantity: parseInt(qty), lowStockAt: parseInt(low) });
+  Products.update(id, { name, icon, buyPrice: parseFloat(buy), sellPrice: parseFloat(sell), quantity: parseInt(qty), lowStockAt: parseInt(low) });
   closeModal('editProductModal');
   Products.render();
   renderDashboard();
   showToast('✅ Product updated!');
+}
+
+// ============================================================
+// RESTOCK FUNCTIONS
+// ============================================================
+
+// Open restock picker — shows a product list to choose which to restock
+function openRestockPicker() {
+  if (Trial.checkPaywall()) return;
+  const products = Data.getProducts();
+  if (!products.length) { showToast('No products yet. Add products first.', 'error'); return; }
+
+  // Build a quick-select sheet by repurposing the sale product grid
+  const grid = document.getElementById('saleProductGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  products.forEach(p => {
+    const btn = document.createElement('div');
+    btn.className = 'sale-product-btn';
+    btn.dataset.id = p.id;
+    const isLow = Products.isLowStock(p);
+    btn.innerHTML = `
+      <div style="font-size:1.5rem">${p.icon}</div>
+      <div class="spb-name">${p.name}</div>
+      <div class="spb-price">Stock: ${p.quantity} ${isLow ? '⚠️' : '✅'}</div>`;
+    btn.addEventListener('click', () => {
+      closeModal('recordSaleModal');
+      openRestockModal(p.id);
+    });
+    grid.appendChild(btn);
+  });
+
+  // Reuse the sale modal but with different title
+  const title = document.querySelector('#recordSaleModal .modal-title');
+  if (title) title.textContent = '📦 Select Product to Restock';
+  const footer = document.getElementById('saleModalFooter');
+
+  openModal('recordSaleModal');
+}
+
+// Open restock modal for a specific product
+function openRestockModal(productId) {
+  const p = Products.getById(productId);
+  if (!p) return;
+
+  document.getElementById('restockProductId').value = p.id;
+  document.getElementById('restockIcon').textContent  = p.icon;
+  document.getElementById('restockName').textContent  = p.name;
+  document.getElementById('restockCurrentStock').textContent = `Current stock: ${p.quantity} units`;
+  document.getElementById('restockQty').value = '';
+  document.getElementById('restockCost').value = '';
+  document.getElementById('restockPreview').textContent = `New total stock will show here`;
+
+  // Live preview as user types
+  const qtyInput = document.getElementById('restockQty');
+  qtyInput.oninput = () => {
+    const added = parseInt(qtyInput.value) || 0;
+    const newTotal = p.quantity + added;
+    document.getElementById('restockPreview').textContent =
+      added > 0 ? `✅ New stock: ${p.quantity} + ${added} = ${newTotal} units` : 'New total stock will show here';
+  };
+
+  openModal('restockModal');
+}
+
+// Open restock directly from the edit product modal
+function openRestockFromEdit() {
+  const id = document.getElementById('editProductId').value;
+  closeModal('editProductModal');
+  setTimeout(() => openRestockModal(id), 200);
+}
+
+function submitRestock() {
+  const id   = document.getElementById('restockProductId').value;
+  const qty  = parseInt(document.getElementById('restockQty').value);
+  const cost = parseFloat(document.getElementById('restockCost').value) || 0;
+  const p    = Products.getById(id);
+
+  if (!qty || qty <= 0) { showToast('Enter the number of units added.', 'error'); return; }
+
+  const newQty = p.quantity + qty;
+  Products.update(id, { quantity: newQty });
+
+  // Log as an expense if cost was entered
+  if (cost > 0) {
+    Expenses.add({ category: 'Stock', description: `Restocked ${p.name} (×${qty})`, amount: cost });
+  }
+
+  closeModal('restockModal');
+  Products.render();
+  renderDashboard();
+  showToast(`📦 ${p.name} restocked! +${qty} units → ${newQty} total`);
 }
 
 function deleteProductFromEdit() {
@@ -973,15 +1209,32 @@ function submitWithdrawal() {
 // RENT SETTINGS
 // ============================================================
 
-function saveRentSettings() {
-  const rent = document.getElementById('rentInput').value;
+function openRentSettings() {
   const settings = Data.getSettings();
-  settings.rent = parseFloat(rent) || 0;
+  const ri = document.getElementById('rentInput');
+  const rd = document.getElementById('rentDailyInput');
+  const rf = document.getElementById('restockFundInput');
+  if (ri) ri.value = settings.rent || '';
+  if (rd) rd.value = settings.dailyRentSaving || '';
+  if (rf) rf.value = settings.restockFund !== undefined ? settings.restockFund : 200;
+  openModal('rentSettingsModal');
+}
+
+function saveRentSettings() {
+  const rent        = parseFloat(document.getElementById('rentInput').value) || 0;
+  const dailyManual = parseFloat(document.getElementById('rentDailyInput')?.value) || 0;
+  const restock     = parseFloat(document.getElementById('restockFundInput')?.value) || 0;
+
+  const settings = Data.getSettings();
+  settings.rent           = rent;
+  settings.dailyRentSaving= dailyManual;  // 0 = auto-calculate from rent ÷ days
+  settings.restockFund    = restock;
   Data.saveSettings(settings);
+
   closeModal('rentSettingsModal');
   renderDashboard();
   renderSettings();
-  showToast('Rent saved! 🏠');
+  showToast('✅ Savings settings saved! 🏠');
 }
 
 // ============================================================
@@ -1236,6 +1489,257 @@ function loadSampleData() {
   const s = Data.getSettings();
   s.rent = 8000;
   Data.saveSettings(s);
+}
+
+// ============================================================
+// EXPORT / REPORT FUNCTIONS
+// ============================================================
+
+function getExportDateRange() {
+  const period = document.getElementById('exportPeriod')?.value || 'month';
+  const today  = Dates.today();
+  const month  = today.slice(0, 7);
+  if (period === 'today') return { label: `Today (${today})`,  filter: (d) => d === today };
+  if (period === 'month') return { label: `Month of ${month}`, filter: (d) => d.startsWith(month) };
+  return { label: 'All Time', filter: () => true };
+}
+
+// Download CSV file (opens in Excel / Google Sheets)
+function exportCSV() {
+  const { label, filter } = getExportDateRange();
+  const settings  = Data.getSettings();
+  const bizName   = settings.businessName || 'My Shop';
+  const sales     = Data.getSales().filter(s => filter(s.date));
+  const expenses  = Data.getExpenses().filter(e => filter(e.date));
+  const debts     = Data.getDebts();
+  const products  = Data.getProducts();
+
+  let csv = '';
+
+  // ---- Summary Sheet ----
+  const totalRevenue = sales.reduce((s, r) => s + r.revenue, 0);
+  const totalProfit  = sales.reduce((s, r) => s + r.profit,  0);
+  const totalExpenses= expenses.reduce((s, e) => s + e.amount, 0);
+  const totalDebt    = debts.filter(d => d.status !== 'paid').reduce((s, d) => s + (d.amount - d.paidAmount), 0);
+
+  csv += `BIZCOUNT BUSINESS REPORT\n`;
+  csv += `Business,${bizName}\n`;
+  csv += `Period,${label}\n`;
+  csv += `Generated,${new Date().toLocaleString('en-KE')}\n\n`;
+
+  csv += `SUMMARY\n`;
+  csv += `Total Revenue,KSh ${totalRevenue.toLocaleString()}\n`;
+  csv += `Total Profit,KSh ${totalProfit.toLocaleString()}\n`;
+  csv += `Total Expenses,KSh ${totalExpenses.toLocaleString()}\n`;
+  csv += `Net Profit,KSh ${(totalProfit - totalExpenses).toLocaleString()}\n`;
+  csv += `Outstanding Debt,KSh ${totalDebt.toLocaleString()}\n\n`;
+
+  // ---- Sales ----
+  csv += `SALES (${sales.length} transactions)\n`;
+  csv += `Date,Product,Qty,Selling Price,Revenue,Profit,Payment\n`;
+  sales.forEach(s => {
+    csv += `${s.date},"${s.productName}",${s.qty},${s.sellPrice},${s.revenue},${s.profit},${s.paymentMethod}\n`;
+  });
+  csv += '\n';
+
+  // ---- Expenses ----
+  csv += `EXPENSES (${expenses.length} entries)\n`;
+  csv += `Date,Category,Description,Amount\n`;
+  expenses.forEach(e => {
+    csv += `${e.date},${e.category},"${e.description}",${e.amount}\n`;
+  });
+  csv += '\n';
+
+  // ---- Products ----
+  csv += `PRODUCTS (${products.length} items)\n`;
+  csv += `Name,Buy Price,Sell Price,Profit Per Unit,Current Stock\n`;
+  products.forEach(p => {
+    csv += `"${p.name}",${p.buyPrice},${p.sellPrice},${p.profit},${p.quantity}\n`;
+  });
+  csv += '\n';
+
+  // ---- Debts ----
+  const activeDebts = debts.filter(d => d.status !== 'paid');
+  csv += `OUTSTANDING DEBTS (${activeDebts.length})\n`;
+  csv += `Customer,Amount Owed,Paid,Remaining,Status,Date\n`;
+  activeDebts.forEach(d => {
+    csv += `"${d.customerName}",${d.amount},${d.paidAmount},${d.amount - d.paidAmount},${d.status},${d.date}\n`;
+  });
+
+  // Download
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `BizCount_${bizName.replace(/\s+/g,'_')}_${label.replace(/\s+/g,'_')}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  closeModal('exportModal');
+  showToast('✅ CSV downloaded! Open in Excel or Google Sheets.', 'success');
+}
+
+// Generate printable HTML report (print to PDF from browser)
+function exportPrintReport() {
+  const { label, filter } = getExportDateRange();
+  const settings  = Data.getSettings();
+  const bizName   = settings.businessName || 'My Shop';
+  const sales     = Data.getSales().filter(s => filter(s.date));
+  const expenses  = Data.getExpenses().filter(e => filter(e.date));
+  const debts     = Data.getDebts().filter(d => d.status !== 'paid');
+  const products  = Data.getProducts();
+
+  const totalRevenue  = sales.reduce((s, r) => s + r.revenue, 0);
+  const totalProfit   = sales.reduce((s, r) => s + r.profit,  0);
+  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+  const netProfit     = totalProfit - totalExpenses;
+  const totalDebt     = debts.reduce((s, d) => s + (d.amount - d.paidAmount), 0);
+
+  const salesRows = sales.map(s => `
+    <tr>
+      <td>${s.date}</td><td>${s.productName}</td><td>${s.qty}</td>
+      <td>KSh ${s.revenue.toLocaleString()}</td>
+      <td style="color:#1A7A4A;font-weight:700">KSh ${s.profit.toLocaleString()}</td>
+      <td>${s.paymentMethod === 'mpesa' ? '📱 M-Pesa' : '💵 Cash'}</td>
+    </tr>`).join('');
+
+  const expenseRows = expenses.map(e => `
+    <tr>
+      <td>${e.date}</td><td>${e.category}</td><td>${e.description}</td>
+      <td style="color:#E03B3B;font-weight:700">KSh ${e.amount.toLocaleString()}</td>
+    </tr>`).join('');
+
+  const debtRows = debts.map(d => `
+    <tr>
+      <td>${d.customerName}</td><td>${d.description || '—'}</td>
+      <td style="color:#E03B3B;font-weight:700">KSh ${(d.amount - d.paidAmount).toLocaleString()}</td>
+      <td><span style="color:#E03B3B;font-weight:800;text-transform:uppercase;font-size:0.75rem">${d.status}</span></td>
+    </tr>`).join('');
+
+  const productRows = products.map(p => `
+    <tr>
+      <td>${p.icon} ${p.name}</td>
+      <td>KSh ${p.buyPrice.toLocaleString()}</td>
+      <td>KSh ${p.sellPrice.toLocaleString()}</td>
+      <td style="color:#1A7A4A;font-weight:700">KSh ${p.profit.toLocaleString()}</td>
+      <td>${p.quantity} ${Products.isLowStock(p) ? '<span style="color:#E03B3B;font-weight:800">⚠️ LOW</span>' : '✅'}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>BizCount Report — ${bizName}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #1A1D23; padding: 24px; max-width: 900px; margin: 0 auto; }
+  .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #1A7A4A; padding-bottom: 16px; margin-bottom: 20px; }
+  .header h1 { font-size: 1.6rem; color: #1A7A4A; }
+  .header h1 span { color: #F5A623; }
+  .header .meta { text-align: right; color: #666; font-size: 0.82rem; }
+  .summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+  .sum-box { background: #F5F7FA; border-radius: 8px; padding: 12px; text-align: center; border-top: 3px solid #1A7A4A; }
+  .sum-box.red { border-color: #E03B3B; }
+  .sum-box.gold { border-color: #F5A623; }
+  .sum-box .sl { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: #8A95A3; margin-bottom: 4px; }
+  .sum-box .sv { font-size: 1.1rem; font-weight: 900; color: #1A1D23; }
+  .sum-box.red .sv { color: #E03B3B; }
+  .sum-box .net { color: ${netProfit >= 0 ? '#1A7A4A' : '#E03B3B'}; }
+  section { margin-bottom: 24px; }
+  section h2 { font-size: 1rem; font-weight: 800; color: #1A7A4A; border-bottom: 1px solid #E2E8F0; padding-bottom: 6px; margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th { background: #1A7A4A; color: white; padding: 7px 10px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.3px; }
+  td { padding: 7px 10px; border-bottom: 1px solid #F0F0F0; }
+  tr:nth-child(even) td { background: #FAFAFA; }
+  .empty { color: #8A95A3; font-style: italic; padding: 10px; }
+  .footer { margin-top: 30px; border-top: 1px solid #E2E8F0; padding-top: 12px; text-align: center; color: #8A95A3; font-size: 0.75rem; }
+  @media print {
+    body { padding: 0; }
+    button { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Biz<span>Count</span> 💰</h1>
+    <div style="font-size:1rem;font-weight:700;margin-top:2px">${bizName}</div>
+  </div>
+  <div class="meta">
+    <div style="font-weight:800;font-size:0.9rem">Business Report</div>
+    <div>${label}</div>
+    <div style="margin-top:4px">Generated: ${new Date().toLocaleString('en-KE')}</div>
+  </div>
+</div>
+
+<div class="summary">
+  <div class="sum-box"><div class="sl">Revenue</div><div class="sv">KSh ${totalRevenue.toLocaleString()}</div></div>
+  <div class="sum-box"><div class="sl">Gross Profit</div><div class="sv">KSh ${totalProfit.toLocaleString()}</div></div>
+  <div class="sum-box red"><div class="sl">Expenses</div><div class="sv">KSh ${totalExpenses.toLocaleString()}</div></div>
+  <div class="sum-box"><div class="sl">Net Profit</div><div class="sv net">KSh ${netProfit.toLocaleString()}</div></div>
+  <div class="sum-box red"><div class="sl">Debts Owed</div><div class="sv">KSh ${totalDebt.toLocaleString()}</div></div>
+</div>
+
+<section>
+  <h2>📦 Products (${products.length})</h2>
+  ${products.length ? `
+  <table>
+    <tr><th>Product</th><th>Buy Price</th><th>Sell Price</th><th>Profit/Unit</th><th>Stock</th></tr>
+    ${productRows}
+  </table>` : '<p class="empty">No products added yet.</p>'}
+</section>
+
+<section>
+  <h2>💰 Sales (${sales.length} transactions)</h2>
+  ${sales.length ? `
+  <table>
+    <tr><th>Date</th><th>Product</th><th>Qty</th><th>Revenue</th><th>Profit</th><th>Payment</th></tr>
+    ${salesRows}
+  </table>` : '<p class="empty">No sales recorded for this period.</p>'}
+</section>
+
+<section>
+  <h2>🧾 Expenses (${expenses.length} entries)</h2>
+  ${expenses.length ? `
+  <table>
+    <tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr>
+    ${expenseRows}
+  </table>` : '<p class="empty">No expenses recorded for this period.</p>'}
+</section>
+
+<section>
+  <h2>📝 Outstanding Debts / Madeni (${debts.length})</h2>
+  ${debts.length ? `
+  <table>
+    <tr><th>Customer</th><th>Items</th><th>Remaining</th><th>Status</th></tr>
+    ${debtRows}
+  </table>` : '<p class="empty">No outstanding debts. 🎉</p>'}
+</section>
+
+<div class="footer">
+  BizCount v1.0 · Made for Kenya 🇰🇪 · Report generated on ${new Date().toLocaleString('en-KE')}
+</div>
+
+<br/>
+<button onclick="window.print()" style="background:#1A7A4A;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:0.95rem;font-weight:800;cursor:pointer;display:block;margin:0 auto">
+  🖨️ Print / Save as PDF
+</button>
+
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+  } else {
+    showToast('Allow pop-ups to view the report.', 'error');
+  }
+
+  closeModal('exportModal');
 }
 
 // ============================================================
