@@ -1383,3 +1383,23 @@ small { font-size: 0.78rem; color: var(--muted); }
   width: 24px;
   border-radius: 4px;
 }
+
+/* ============================================================
+   SPOTLIGHT TOUR
+   ============================================================ */
+#tourOverlay { transition: opacity 0.2s; }
+#tourTooltip { transition: top 0.25s, bottom 0.25s; }
+
+#spotBorder {
+  animation: pulseStroke 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseStroke {
+  0%, 100% { opacity: 0.9; stroke-width: 3; }
+  50%       { opacity: 0.4; stroke-width: 5; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

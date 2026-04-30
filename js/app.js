@@ -1831,10 +1831,685 @@ function markRentSavedToday() {
 }
 
 // ============================================================
-// ONBOARDING TOUR — shown once to new users
+// RENT SETTINGS — save from settings tab inline form
 // ============================================================
 
-const ONBOARD_STEPS = [
+function previewRentCalc() {
+  const rent     = parseFloat(document.getElementById('settingsRentInput')?.value) || 0;
+  const daysLeft = Dates.daysInMonth() - Dates.dayOfMonth() + 1;
+  const daily    = rent > 0 ? Math.ceil(rent / daysLeft) : 0;
+  _setEl('rfRent',  fmt(rent));
+  _setEl('rfDays',  daysLeft);
+  _setEl('rfDaily', fmt(daily));
+}
+
+function saveRentFromSettings() {
+  const rent  = parseFloat(document.getElementById('settingsRentInput')?.value) || 0;
+  const daily = parseFloat(document.getElementById('settingsRentDailyInput')?.value) || 0;
+  const settings = Data.getSettings();
+  settings.rent            = rent;
+  settings.dailyRentSaving = daily;
+  Data.saveSettings(settings);
+  if (window.Firebase) window.Firebase.cloud.saveSettings(settings);
+  renderDashboard();
+  renderSettings();
+  showToast('✅ Rent settings saved! 🏠', 'success');
+}
+
+// ============================================================
+// RENDER SETTINGS TAB
+// ============================================================
+
+function renderSettings() {
+  const settings = Data.getSettings();
+  const user     = Data.getUser();
+  _setEl('settingBusinessName', settings.businessName || 'My Shop');
+  _setEl('settingPhone', user ? user.phone : '');
+
+  // Pre-fill rent inputs
+  const ri = document.getElementById('settingsRentInput');
+  const rd = document.getElementById('settingsRentDailyInput');
+  if (ri && !ri.value) ri.value = settings.rent || '';
+  if (rd && !rd.value) rd.value = settings.dailyRentSaving || '';
+
+  // Rent calculator display
+  const rent     = parseFloat(settings.rent) || 0;
+  const daysLeft = Dates.daysInMonth() - Dates.dayOfMonth() + 1;
+  const daily    = settings.dailyRentSaving > 0
+    ? settings.dailyRentSaving
+    : (rent > 0 ? Math.ceil(rent / daysLeft) : 0);
+
+  _setEl('rfRent',  fmt(rent));
+  _setEl('rfDays',  daysLeft);
+  _setEl('rfDaily', fmt(daily));
+
+  // Settings rent progress
+  const monthSaved   = RentTracker.monthSaved();
+  const rentProgress = RentTracker.rentProgress();
+  _setEl('settingsRentProgressLabel', `${fmt(monthSaved)} / ${fmt(rent)} saved this month`);
+  _setEl('settingsRentProgressPct',   `${rentProgress}%`);
+  const sf = document.getElementById('settingsRentFill');
+  if (sf) {
+    sf.style.width     = `${rentProgress}%`;
+    sf.className       = `progress-fill ${rentProgress < 50 ? 'danger' : rentProgress < 80 ? 'gold' : ''}`;
+  }
+
+  // Days saved
+  const records   = DB.get('rent_saved_days', []);
+  const month     = Dates.today().slice(0, 7);
+  const daysSaved = records.filter(d => d.startsWith(month)).length;
+  _setEl('settingsDaysSaved', `${daysSaved} of ${Dates.daysInMonth()} days`);
+
+  // Subscription
+  const trial    = Data.getTrial();
+  const statusEl = document.getElementById('subscriptionStatus');
+  if (statusEl) {
+    if (Trial.isPaid()) {
+      statusEl.innerHTML = `<span style="color:var(--green);font-weight:800">✅ Active — Full Access</span>`;
+    } else if (Trial.daysLeft() > 0) {
+      statusEl.innerHTML = `<span style="color:var(--gold);font-weight:800">🎁 Free Trial — ${Trial.daysLeft()} day(s) left</span>`;
+    } else {
+      statusEl.innerHTML = `<span style="color:var(--red);font-weight:800">🔒 Trial Expired — Upgrade</span>`;
+    }
+  }
+
+  // Staff status
+  const staffAcc = DB.get('staff_account', null);
+  _setEl('staffStatusLabel', staffAcc ? `Staff: ${staffAcc.name}` : 'No staff account yet');
+
+  // SMS status
+  const smsS = DB.get('sms_settings', {});
+  _setEl('smsStatusLabel', smsS.enabled && smsS.phone1 ? `Active — ${smsS.time} daily` : 'Not configured');
+}
+// Highlights real elements live on the page
+// ============================================================
+
+const TOUR_STEPS = [
+  {
+    target: null,
+    tab: 'home',
+    icon: '👋',
+    title: 'Welcome to BizCount!',
+    body: 'This is your business tracker. I will show you exactly how everything works — live on the actual screen. Follow me!',
+    tip: '💡 Tap Next to move through the tour. Tap Skip any time.',
+  },
+  {
+    target: 'heroCard',
+    tab: 'home',
+    icon: '📈',
+    title: 'Net Profit — Right Here',
+    body: 'This green card shows your net profit for today. It is calculated as: money collected from sales minus the cost of goods you sold.',
+    tip: '💡 If it turns red, your stock cost was more than what you earned.',
+  },
+  {
+    target: 'bdCanUse',
+    tab: 'home',
+    icon: '✅',
+    title: 'Cash You Can Use',
+    body: 'This is the most important number. Net profit minus rent savings = the money you are free to spend or take home today.',
+    tip: '💡 Never spend more than this amount on personal things.',
+  },
+  {
+    target: 'savedTodayBtn',
+    tab: 'home',
+    icon: '🏠',
+    title: '"I Saved Today" Button',
+    body: 'Every day, tap this button to confirm you have set aside your rent money. It deducts from your profit and tracks your monthly rent progress.',
+    tip: '💡 Set your rent amount in Settings → Rent Savings Calculator.',
+  },
+  {
+    target: null,
+    tab: 'products',
+    navTarget: '[data-tab="products"]',
+    icon: '📦',
+    title: 'Products Tab — Add Your Items',
+    body: 'This is where you add every item you sell. Enter the buying price and selling price — BizCount calculates your profit per item automatically.',
+    tip: '💡 Example: Unga — Buy KSh 130, Sell KSh 160 = KSh 30 profit each.',
+  },
+  {
+    target: 'prodStockCost',
+    tab: 'products',
+    icon: '🏪',
+    title: 'Money Tied Up in Stock',
+    body: 'This box shows how much money you have locked inside your shelf goods. It only becomes profit when you sell those items.',
+    tip: '💡 High stock value + low sales = you need to sell more, not buy more.',
+  },
+  {
+    target: null,
+    tab: 'debts',
+    navTarget: '[data-tab="debts"]',
+    icon: '📝',
+    title: 'Madeni Tab — Track Debts',
+    body: 'When a customer takes goods on credit, record it here immediately. Enter their name and amount. Tap Pay when they clear the debt.',
+    tip: '💡 Always record madeni on the spot — never trust your memory.',
+  },
+  {
+    target: null,
+    tab: 'expenses',
+    navTarget: '[data-tab="expenses"]',
+    icon: '🧾',
+    title: 'Expenses Tab',
+    body: 'Record every business expense here — transport, airtime, buying stock, anything spent for the business. This helps you see your real profit.',
+    tip: '💡 Even KSh 50 airtime counts. Small expenses add up to big losses.',
+  },
+  {
+    target: 'rentCalcSection',
+    tab: 'settings',
+    navTarget: '[data-tab="settings"]',
+    icon: '🏠',
+    title: 'Rent Calculator — In Settings',
+    body: 'Enter your monthly rent here. BizCount divides it by days remaining and tells you exactly how much to save today.',
+    tip: '💡 KSh 8,000 rent ÷ 24 days = KSh 333 to save today.',
+  },
+  {
+    target: null,
+    tab: 'settings',
+    icon: '🚀',
+    title: "You're Ready to Go!",
+    body: "That's everything! Start by adding your first product, then record every sale. The more you track, the more your business grows.",
+    tip: '💡 You can replay this tour anytime from Settings → Help.',
+  },
+];
+
+let tourStep = 0;
+
+function startOnboarding() {
+  tourStep = 0;
+  _showTourStep();
+}
+
+function _showTourStep() {
+  const step = TOUR_STEPS[tourStep];
+  if (!step) { skipTour(); return; }
+
+  // Navigate to correct tab first
+  if (step.navTarget) {
+    const navBtn = document.querySelector(step.navTarget);
+    if (navBtn) navBtn.click();
+  } else if (step.tab) {
+    openTab(step.tab);
+  }
+
+  // Wait for tab render then show tooltip + spotlight
+  setTimeout(() => {
+    _renderTourUI(step);
+  }, 250);
+}
+
+function _renderTourUI(step) {
+  const overlay = document.getElementById('tourOverlay');
+  const tooltip = document.getElementById('tourTooltip');
+  if (!overlay || !tooltip) return;
+
+  overlay.classList.remove('hidden');
+  tooltip.classList.remove('hidden');
+
+  // Fill content
+  document.getElementById('tourIcon').textContent  = step.icon;
+  document.getElementById('tourTitle').textContent = step.title;
+  document.getElementById('tourBody').textContent  = step.body;
+  document.getElementById('tourTip').textContent   = step.tip;
+
+  // Progress dots
+  document.getElementById('tourDots').innerHTML = TOUR_STEPS.map((_, i) => `
+    <div style="
+      width:${i === tourStep ? '22px' : '7px'};height:7px;
+      border-radius:4px;transition:all 0.25s;
+      background:${i === tourStep ? '#1A7A4A' : '#E2E8F0'};
+    "></div>`).join('');
+
+  // Last step
+  const isLast = tourStep === TOUR_STEPS.length - 1;
+  document.getElementById('tourNextBtn').textContent = isLast ? '🚀 Start Now!' : 'Next →';
+
+  // Spotlight + tooltip position
+  const target = step.target ? document.getElementById(step.target) : null;
+
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => _positionTour(target), 350);
+  } else {
+    _clearSpotlight();
+    _placeTooltipCenter();
+  }
+}
+
+function _positionTour(target) {
+  const rect  = target.getBoundingClientRect();
+  const pad   = 8;
+  const viewH = window.innerHeight;
+
+  // Spotlight cutout
+  const cutout = document.getElementById('spotCutout');
+  const border = document.getElementById('spotBorder');
+  if (cutout && border) {
+    const attrs = { x: rect.left - pad, y: rect.top - pad, width: rect.width + pad*2, height: rect.height + pad*2, rx: 12 };
+    Object.entries(attrs).forEach(([k,v]) => { cutout.setAttribute(k,v); border.setAttribute(k,v); });
+  }
+
+  // Tooltip: above or below target
+  const tooltip  = document.getElementById('tourTooltip');
+  const arrow    = document.getElementById('tourArrow');
+  const spaceBelow = viewH - rect.bottom;
+  const spaceAbove = rect.top;
+
+  if (spaceBelow >= 220 || spaceBelow > spaceAbove) {
+    tooltip.style.top    = (rect.bottom + pad + 10) + 'px';
+    tooltip.style.bottom = 'auto';
+    if (arrow) { arrow.style.top='-9px'; arrow.style.bottom='auto'; arrow.style.borderTop='none'; arrow.style.borderBottom='9px solid white'; arrow.style.display='block'; }
+  } else {
+    tooltip.style.bottom = (viewH - rect.top + pad + 10) + 'px';
+    tooltip.style.top    = 'auto';
+    if (arrow) { arrow.style.bottom='-9px'; arrow.style.top='auto'; arrow.style.borderBottom='none'; arrow.style.borderTop='9px solid white'; arrow.style.display='block'; }
+  }
+}
+
+function _clearSpotlight() {
+  ['spotCutout','spotBorder'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.setAttribute('width','0'); el.setAttribute('height','0'); }
+  });
+  const arrow = document.getElementById('tourArrow');
+  if (arrow) arrow.style.display = 'none';
+}
+
+function _placeTooltipCenter() {
+  const tooltip = document.getElementById('tourTooltip');
+  if (!tooltip) return;
+  tooltip.style.bottom = '48px';
+  tooltip.style.top    = 'auto';
+}
+
+function nextTourStep() {
+  tourStep++;
+  if (tourStep >= TOUR_STEPS.length) { skipTour(); return; }
+  _showTourStep();
+}
+
+function skipTour() {
+  ['tourOverlay','tourTooltip'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
+  _clearSpotlight();
+  DB.set('onboarding_done', true);
+  showToast('🎉 Tour done! Start by adding your first product.', 'success');
+  openTab('products');
+  setTimeout(() => openAddProduct(), 500);
+}
+
+function checkOnboarding() {
+  if (!DB.get('onboarding_done', false)) {
+    setTimeout(() => startOnboarding(), 1000);
+  }
+}
+
+// ============================================================
+// HISTORY MODULE — review any past date
+// ============================================================
+
+function getYesterday() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function getLast(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+function loadHistoryDate(dateStr) {
+  if (!dateStr) return;
+
+  // Set picker value
+  const picker = document.getElementById('historyDatePicker');
+  if (picker) picker.value = dateStr;
+
+  const sales    = Data.getSales().filter(s => s.date === dateStr);
+  const expenses = Data.getExpenses().filter(e => e.date === dateStr);
+
+  const revenue  = sales.reduce((s, r) => s + r.revenue, 0);
+  const cogs     = sales.reduce((s, r) => s + (r.buyPrice * r.qty), 0);
+  const expTotal = expenses.reduce((s, e) => s + e.amount, 0);
+  const net      = revenue - cogs - expTotal;
+
+  // Show result area
+  document.getElementById('historyResult').style.display = 'block';
+  document.getElementById('historyEmpty').style.display  = 'none';
+
+  // Date label
+  const d = new Date(dateStr + 'T00:00:00');
+  _setEl('historyDateLabel', d.toLocaleDateString('en-KE', { weekday:'long', day:'numeric', month:'long', year:'numeric' }));
+
+  // Hero
+  const hero = document.getElementById('historyHero');
+  if (hero) hero.style.background = net >= 0
+    ? 'linear-gradient(135deg, var(--green) 0%, #0F5230 100%)'
+    : 'linear-gradient(135deg, #C0392B 0%, #922B21 100%)';
+  _setEl('historyProfit',    fmt(net));
+  _setEl('historyProfitSub', net >= 0 ? 'Good day! 🎉' : 'Loss day — review expenses');
+
+  // Breakdown
+  _setEl('historyRevenue',  fmt(revenue));
+  _setEl('historyCOGS',    `-${fmt(cogs)}`);
+  _setEl('historyExpenses',`-${fmt(expTotal)}`);
+  _setEl('historyNet',      fmt(net));
+
+  // Net colour
+  const netEl = document.getElementById('historyNet');
+  if (netEl) netEl.style.color = net >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Sales list
+  const salesList = document.getElementById('historySalesList');
+  if (salesList) {
+    if (!sales.length) {
+      salesList.innerHTML = `<div class="empty-state" style="padding:12px 0"><div class="e-icon">🛒</div><div class="e-text">No sales on this date</div></div>`;
+    } else {
+      salesList.innerHTML = sales.map(s => `
+        <div class="tx-item">
+          <div class="tx-dot sale">💰</div>
+          <div class="tx-info">
+            <div class="tx-name">${s.productName} × ${s.qty}</div>
+            <div class="tx-time">${s.paymentMethod === 'mpesa' ? '📱 M-Pesa' : '💵 Cash'}</div>
+          </div>
+          <div class="tx-amount plus">+${fmt(s.profit)}</div>
+        </div>`).join('');
+    }
+  }
+
+  // Expenses list
+  const expList = document.getElementById('historyExpensesList');
+  if (expList) {
+    if (!expenses.length) {
+      expList.innerHTML = `<div class="empty-state" style="padding:12px 0"><div class="e-icon">📋</div><div class="e-text">No expenses on this date</div></div>`;
+    } else {
+      expList.innerHTML = expenses.map(e => `
+        <div class="tx-item">
+          <div class="tx-dot expense">🧾</div>
+          <div class="tx-info">
+            <div class="tx-name">${e.description}</div>
+            <div class="tx-time">${e.category}</div>
+          </div>
+          <div class="tx-amount minus">-${fmt(e.amount)}</div>
+        </div>`).join('');
+    }
+  }
+}
+
+// ============================================================
+// STAFF MODULE
+// ============================================================
+
+const Staff = {
+  getAccount: () => DB.get('staff_account', null),
+  saveAccount: (acc) => DB.set('staff_account', acc),
+  isStaffMode: () => DB.get('staff_mode', false),
+  setStaffMode: (v) => DB.set('staff_mode', v),
+};
+
+function openStaffSetup() {
+  const acc = Staff.getAccount();
+  if (acc) {
+    document.getElementById('staffName').value    = acc.name || '';
+    document.getElementById('staffPinNew').value  = '';
+    document.getElementById('staffPinNew2').value = '';
+  }
+  openModal('staffSetupModal');
+}
+
+function saveStaffAccount() {
+  const name = document.getElementById('staffName').value.trim();
+  const pin  = document.getElementById('staffPinNew').value.trim();
+  const pin2 = document.getElementById('staffPinNew2').value.trim();
+  if (!name) { showToast('Enter staff name.', 'error'); return; }
+  if (!pin || pin.length < 4) { showToast('PIN must be 4 digits.', 'error'); return; }
+  if (pin !== pin2) { showToast('PINs do not match.', 'error'); return; }
+  Staff.saveAccount({ name, pin });
+  if (window.Firebase) window.Firebase.cloud.saveSettings({ ...Data.getSettings(), staffAccount: { name, pin } });
+  closeModal('staffSetupModal');
+  renderSettings();
+  showToast(`✅ Staff account for ${name} created!`, 'success');
+}
+
+function handleStaffLogin() {
+  const pin = document.getElementById('staffPinInput').value.trim();
+  const acc = Staff.getAccount();
+  if (!acc) { showToast('No staff account set up yet.', 'error'); return; }
+  if (pin !== acc.pin) { showToast('Wrong PIN. Try again.', 'error'); return; }
+  Staff.setStaffMode(true);
+  Pages.show('staffAppPage');
+  _setEl('staffNameBadge', acc.name);
+  // Set shop name on staff login page
+  const settings = Data.getSettings();
+  _setEl('staffShopName', settings.businessName || 'My Shop');
+  renderStaffRecent();
+  showToast(`Welcome, ${acc.name}! 👷`, 'success');
+}
+
+function staffLogout() {
+  Staff.setStaffMode(false);
+  Pages.show('loginPage');
+  document.getElementById('staffPinInput').value = '';
+}
+
+function renderStaffRecent() {
+  const list  = document.getElementById('staffRecentSales');
+  if (!list) return;
+  const sales = Sales.recent(8);
+  if (!sales.length) {
+    list.innerHTML = `<div class="empty-state"><div class="e-icon">🛒</div><div class="e-text">No sales yet today</div></div>`;
+    return;
+  }
+  // Staff sees product names and qty but NOT profit amounts
+  list.innerHTML = sales.map(s => `
+    <div class="tx-item">
+      <div class="tx-dot sale">💰</div>
+      <div class="tx-info">
+        <div class="tx-name">${s.productName} × ${s.qty}</div>
+        <div class="tx-time">${Dates.timeAgo(s.createdAt)} · ${s.paymentMethod === 'mpesa' ? '📱 M-Pesa' : '💵 Cash'}</div>
+      </div>
+      <div style="font-size:0.75rem;font-weight:700;color:var(--muted)">Recorded ✅</div>
+    </div>`).join('');
+}
+
+// On staff login page load, show shop name
+function initStaffLoginPage() {
+  const settings = Data.getSettings();
+  _setEl('staffShopName', settings.businessName || 'My Shop');
+}
+
+// ============================================================
+// SMS REPORT — Africa's Talking API
+// ============================================================
+
+// ===== AFRICA'S TALKING API CONFIG =====
+// Sign up free at https://africastalking.com
+// Use 'sandbox' username + sandbox API key for testing
+// Switch to production when ready
+
+const SMS = {
+  getSettings: () => DB.get('sms_settings', { phone1: '', phone2: '', time: '22:30', apiKey: '', username: 'sandbox', enabled: false }),
+  saveSettings: (s) => DB.set('sms_settings', s),
+};
+
+function openSmsSettings() {
+  const s = SMS.getSettings();
+  const p1 = document.getElementById('smsPhone1');
+  const p2 = document.getElementById('smsPhone2');
+  const t  = document.getElementById('smsTime');
+  const k  = document.getElementById('atApiKey');
+  const u  = document.getElementById('atUsername');
+  if (p1) p1.value = s.phone1 ? s.phone1.replace('254','') : '';
+  if (p2) p2.value = s.phone2 ? s.phone2.replace('254','') : '';
+  if (t)  t.value  = s.time || '22:30';
+  if (k)  k.value  = s.apiKey || '';
+  if (u)  u.value  = s.username || 'sandbox';
+  openModal('smsSettingsModal');
+}
+
+function saveSmsSettings() {
+  const raw1 = document.getElementById('smsPhone1')?.value.replace(/\D/g,'') || '';
+  const raw2 = document.getElementById('smsPhone2')?.value.replace(/\D/g,'') || '';
+  const norm = (p) => p ? (p.startsWith('0') ? '254'+p.slice(1) : p.startsWith('7')||p.startsWith('1') ? '254'+p : p) : '';
+  const s = {
+    phone1:   norm(raw1),
+    phone2:   norm(raw2),
+    time:     document.getElementById('smsTime')?.value || '22:30',
+    apiKey:   document.getElementById('atApiKey')?.value.trim() || '',
+    username: document.getElementById('atUsername')?.value.trim() || 'sandbox',
+    enabled:  true,
+  };
+  SMS.saveSettings(s);
+  closeModal('smsSettingsModal');
+  renderSettings();
+  scheduleDailySms();
+  showToast('✅ SMS settings saved!', 'success');
+}
+
+// Build the SMS message text
+function buildSmsMessage() {
+  const settings  = Data.getSettings();
+  const revenue   = Sales.todayRevenue();
+  const cogs      = Sales.todayCOGS();
+  const net       = revenue - cogs;
+  const expenses  = Expenses.todayTotal();
+  const debt      = Debts.totalOwed();
+  const today     = Dates.today();
+  const d         = new Date();
+  const dateStr   = d.toLocaleDateString('en-KE', { day:'numeric', month:'short' });
+  return `BizCount Report ${dateStr}
+Shop: ${settings.businessName || 'My Shop'}
+Revenue: KSh ${revenue.toLocaleString()}
+Stock Cost: KSh ${cogs.toLocaleString()}
+Net Profit: KSh ${net.toLocaleString()}
+Expenses: KSh ${expenses.toLocaleString()}
+Madeni Owed: KSh ${debt.toLocaleString()}
+---
+${net >= 0 ? 'Good day! Keep it up!' : 'Check your expenses tomorrow.'}`;
+}
+
+// Send SMS via Africa's Talking API
+// ===== AFRICA'S TALKING: Must be called from backend in production =====
+// Frontend call is fine for sandbox/testing
+async function sendSmsViaAT(message, phones) {
+  const s = SMS.getSettings();
+  if (!s.apiKey || !s.username) {
+    console.warn('[SMS] No AT API key configured');
+    return false;
+  }
+
+  // ===== AFRICA'S TALKING API CALL =====
+  // In production: POST to your backend /api/sms/send which calls AT
+  // Direct browser call works for sandbox testing
+  try {
+    const body = new URLSearchParams({
+      username: s.username,
+      to: phones.filter(Boolean).join(','),
+      message,
+      from: 'BizCount', // alphanumeric sender (requires AT approval in production)
+    });
+    const res = await fetch('https://api.sandbox.africastalking.com/version1/messaging', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'apiKey': s.apiKey,
+        'Accept': 'application/json',
+      },
+      body,
+    });
+    const data = await res.json();
+    console.log('[SMS] AT response:', data);
+    return true;
+  } catch (e) {
+    console.error('[SMS] Error:', e);
+    return false;
+  }
+}
+
+async function sendTestSms() {
+  const s = SMS.getSettings();
+  const phones = [s.phone1 ? `+${s.phone1}` : null, s.phone2 ? `+${s.phone2}` : null].filter(Boolean);
+  if (!phones.length) { showToast('Add at least one phone number.', 'error'); return; }
+  showToast('📨 Sending test SMS...', 'info');
+  const msg = buildSmsMessage();
+  const ok  = await sendSmsViaAT(msg, phones);
+  showToast(ok ? '✅ Test SMS sent!' : '❌ SMS failed. Check your API key.', ok ? 'success' : 'error');
+}
+
+// Schedule daily SMS using setTimeout (works while app is open)
+// For background SMS (app closed), use a Firebase Cloud Function (see README)
+let _smsTimer = null;
+function scheduleDailySms() {
+  if (_smsTimer) clearTimeout(_smsTimer);
+  const s = SMS.getSettings();
+  if (!s.enabled || !s.phone1) return;
+
+  const [h, m]  = (s.time || '22:30').split(':').map(Number);
+  const now      = new Date();
+  const target   = new Date();
+  target.setHours(h, m, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1); // next day if already passed
+
+  const delay = target - now;
+  _smsTimer = setTimeout(async () => {
+    const msg    = buildSmsMessage();
+    const phones = [s.phone1 ? `+${s.phone1}` : null, s.phone2 ? `+${s.phone2}` : null].filter(Boolean);
+    await sendSmsViaAT(msg, phones);
+    scheduleDailySms(); // reschedule for next day
+  }, delay);
+
+  console.log(`[SMS] Scheduled for ${target.toLocaleTimeString('en-KE')}`);
+}
+
+// ============================================================
+// APP INIT
+// ============================================================
+
+function initApp() {
+  Pages.show('appPage');
+  const settings = Data.getSettings();
+  const topBarName = document.getElementById('topBarName');
+  if (topBarName) topBarName.textContent = settings.businessName || 'My Shop';
+  loadSampleData();
+  Trial.init();
+  Trial.renderBanner();
+  openTab('home');
+  scheduleDailySms();
+  initStaffLoginPage();
+  checkOnboarding();
+}
+
+// ============================================================
+// DOCUMENT READY
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  Pages.show('loginPage');
+
+  const waitForFirebase = setInterval(() => {
+    if (window.Firebase) {
+      clearInterval(waitForFirebase);
+      window.Firebase.initAuth();
+    }
+  }, 50);
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+
+  const paywallOverlay = document.getElementById('paywallModal');
+  if (paywallOverlay) {
+    paywallOverlay.addEventListener('click', (e) => {
+      if (e.target === paywallOverlay) paywallOverlay.classList.remove('open');
+    });
+  }
+});
+
+
   {
     icon: '👋',
     title: 'Welcome to BizCount!',
@@ -1941,57 +2616,3 @@ function checkOnboarding() {
     setTimeout(() => startOnboarding(), 800);
   }
 }
-
-// ============================================================
-// APP INIT
-// ============================================================
-
-function initApp() {
-  const user = Data.getUser();
-  Pages.show('appPage');
-
-  const settings = Data.getSettings();
-  const topBarName = document.getElementById('topBarName');
-  if (topBarName) topBarName.textContent = settings.businessName || 'My Shop';
-
-  loadSampleData();
-  Trial.init();
-  Trial.renderBanner();
-  openTab('home');
-
-  // Show onboarding for new users
-  checkOnboarding();
-}
-
-// ============================================================
-// DOCUMENT READY
-// ============================================================
-
-document.addEventListener('DOMContentLoaded', () => {
-  // Show login page immediately while Firebase checks auth state
-  Pages.show('loginPage');
-
-  // Wait for Firebase module to load, then start auth listener
-  // Firebase onAuthStateChanged will call initApp() if user is already logged in
-  const waitForFirebase = setInterval(() => {
-    if (window.Firebase) {
-      clearInterval(waitForFirebase);
-      window.Firebase.initAuth(); // starts onAuthStateChanged listener
-    }
-  }, 50);
-
-  // Close modals on overlay click
-  document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) overlay.classList.remove('open');
-    });
-  });
-
-  // Paywall close
-  const paywallOverlay = document.getElementById('paywallModal');
-  if (paywallOverlay) {
-    paywallOverlay.addEventListener('click', (e) => {
-      if (e.target === paywallOverlay) paywallOverlay.classList.remove('open');
-    });
-  }
-});

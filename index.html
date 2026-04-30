@@ -236,33 +236,24 @@
           <button class="btn btn-outline" onclick="openAddProduct()" style="font-size:0.9rem;padding:14px">📦 Add Product</button>
         </div>
 
-        <!-- 🏠 RENT CALCULATOR CARD -->
-        <div class="card" id="rentCalcCard">
-          <div class="card-header">
-            <div class="card-title">🏠 Rent Savings Calculator</div>
-            <button class="btn btn-sm btn-secondary" onclick="openRentSettings()">⚙️ Edit</button>
-          </div>
-
-          <!-- Daily amount formula display -->
-          <div class="rent-formula" id="rentFormula">
-            <div class="rf-part">
-              <div class="rf-val" id="rfRent">KSh 0</div>
-              <div class="rf-label">Monthly Rent</div>
+        <!-- 🏠 Rent Saved Today — compact widget (full calculator is in Settings) -->
+        <div class="card" style="background:var(--green-pale);border:2px solid var(--green);padding:14px 16px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;color:var(--green);letter-spacing:0.4px">🏠 Rent Savings</div>
+              <div style="font-size:1.3rem;font-weight:900;color:var(--green);margin:2px 0" id="rentSaveToday">KSh 0 / day</div>
+              <div id="rentSavedTodayStatus" style="font-size:0.75rem;color:var(--mid)">Tap to mark as saved today</div>
             </div>
-            <div class="rf-op">÷</div>
-            <div class="rf-part">
-              <div class="rf-val" id="rfDays">24</div>
-              <div class="rf-label">Days Left</div>
-            </div>
-            <div class="rf-op">=</div>
-            <div class="rf-part highlight">
-              <div class="rf-val" id="rfDaily">KSh 0</div>
-              <div class="rf-label">Save Today</div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+              <button id="savedTodayBtn" class="btn btn-primary btn-sm" onclick="markRentSavedToday()" style="padding:10px 16px;font-size:0.85rem;white-space:nowrap">
+                ✅ I Saved Today
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="openTab('settings')" style="font-size:0.72rem;padding:6px 10px">
+                ⚙️ Change Rent
+              </button>
             </div>
           </div>
-
-          <!-- Progress bar -->
-          <div class="progress-bar-wrap" style="margin:12px 0 10px">
+          <div class="progress-bar-wrap" style="margin-top:10px;margin-bottom:0">
             <div class="p-labels">
               <span id="rentProgressLabel">KSh 0 / KSh 0 saved</span>
               <span id="rentProgressPct">0%</span>
@@ -271,18 +262,10 @@
               <div class="progress-fill" id="rentProgressFill" style="width:0%"></div>
             </div>
           </div>
-
-          <!-- I SAVED TODAY button -->
-          <div id="savedTodayWrap">
-            <button class="btn btn-primary" id="savedTodayBtn" onclick="markRentSavedToday()" style="font-size:1rem;padding:16px;letter-spacing:0.3px">
-              🏠 I Saved Today — <span id="savedTodayAmt">KSh 0</span>
-            </button>
-            <div id="savedTodayConfirm" class="hidden" style="background:var(--green-pale);border:2px solid var(--green);border-radius:8px;padding:12px;text-align:center;margin-top:4px">
-              <div style="font-size:1.1rem">✅</div>
-              <div style="font-size:0.88rem;font-weight:800;color:var(--green)">Rent saved today! Deducted from profit.</div>
-              <div style="font-size:0.75rem;color:var(--mid);margin-top:2px" id="savedTodayMsg"></div>
-            </div>
-          </div>
+        </div>
+        <div id="savedTodayConfirm" class="hidden" style="background:white;border:2px solid var(--green);border-radius:8px;padding:10px 14px;margin-top:-6px;margin-bottom:14px;text-align:center">
+          <span style="font-size:0.85rem;font-weight:800;color:var(--green)">✅ Rent saved today!</span>
+          <span id="savedTodayMsg" style="font-size:0.75rem;color:var(--mid);display:block;margin-top:2px"></span>
         </div>
 
         <!-- Stat Strip -->
@@ -452,7 +435,7 @@
       <div class="main-content">
         <h2 style="margin-bottom:16px">⚙️ Settings</h2>
 
-        <!-- Account Info -->
+        <!-- Account -->
         <div class="settings-section">
           <div class="card-title" style="margin-bottom:8px;padding-left:4px">Account</div>
           <div class="settings-item" onclick="openModal('businessSettingsModal')">
@@ -463,40 +446,107 @@
             </div>
             <span class="si-arrow">›</span>
           </div>
-          <div class="settings-item" onclick="">
+          <div class="settings-item">
             <div class="si-icon">📱</div>
             <div class="si-text">
               <div class="si-label">Phone Number</div>
               <div class="si-sub" id="settingPhone">Not set</div>
             </div>
-            <span class="si-arrow">›</span>
           </div>
         </div>
 
-        <!-- Financial Settings -->
+        <!-- 🏠 RENT SAVINGS CALCULATOR -->
+        <div class="settings-section" id="rentCalcSection">
+          <div class="card-title" style="margin-bottom:8px;padding-left:4px">🏠 Rent Savings Calculator</div>
+          <div class="card" style="padding:18px">
+
+            <div class="rent-formula">
+              <div class="rf-part">
+                <div class="rf-val" id="rfRent">KSh 0</div>
+                <div class="rf-label">Monthly Rent</div>
+              </div>
+              <div class="rf-op">÷</div>
+              <div class="rf-part">
+                <div class="rf-val" id="rfDays">24</div>
+                <div class="rf-label">Days Left</div>
+              </div>
+              <div class="rf-op">=</div>
+              <div class="rf-part highlight">
+                <div class="rf-val" id="rfDaily">KSh 0</div>
+                <div class="rf-label">Save Today</div>
+              </div>
+            </div>
+
+            <div class="progress-bar-wrap" style="margin:14px 0 10px">
+              <div class="p-labels">
+                <span id="settingsRentProgressLabel">KSh 0 / KSh 0 saved this month</span>
+                <span id="settingsRentProgressPct">0%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" id="settingsRentFill" style="width:0%"></div>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:14px">
+              <span style="font-size:0.82rem;color:var(--mid);font-weight:600">Days saved this month</span>
+              <span style="font-size:1rem;font-weight:900;color:var(--green)" id="settingsDaysSaved">0 days</span>
+            </div>
+
+            <div class="form-group">
+              <label>Monthly Rent Amount (KSh)</label>
+              <input type="number" id="settingsRentInput" placeholder="e.g. 8000" inputmode="decimal" oninput="previewRentCalc()" />
+            </div>
+            <div class="form-group">
+              <label>Daily Saving Amount (KSh) — Optional</label>
+              <input type="number" id="settingsRentDailyInput" placeholder="Leave blank to auto-calculate" inputmode="decimal" />
+              <small style="color:var(--muted);display:block;margin-top:4px">If blank, we divide rent ÷ days remaining</small>
+            </div>
+            <button class="btn btn-primary" onclick="saveRentFromSettings()">✅ Save Rent Settings</button>
+          </div>
+        </div>
+
+        <!-- Personal Money -->
         <div class="settings-section">
-          <div class="card-title" style="margin-bottom:8px;padding-left:4px">Finance</div>
-          <div class="settings-item" onclick="openRentSettings()">
-            <div class="si-icon">🏠</div>
-            <div class="si-text">
-              <div class="si-label">Monthly Rent</div>
-              <div class="si-sub" id="settingRentDisplay">Not set</div>
-            </div>
-            <span class="si-arrow">›</span>
-          </div>
-          <div class="settings-item" onclick="openRentSettings()">
-            <div class="si-icon">📦</div>
-            <div class="si-text">
-              <div class="si-label">Daily Restock Fund</div>
-              <div class="si-sub" id="settingRestockDisplay">KSh 200/day</div>
-            </div>
-            <span class="si-arrow">›</span>
-          </div>
+          <div class="card-title" style="margin-bottom:8px;padding-left:4px">Personal Money</div>
           <div class="settings-item" onclick="openWithdrawal()">
             <div class="si-icon">👤</div>
             <div class="si-text">
               <div class="si-label">Record Personal Withdrawal</div>
               <div class="si-sub">Track money you take for personal use</div>
+            </div>
+            <span class="si-arrow">›</span>
+          </div>
+        </div>
+
+        <!-- Staff Management -->
+        <div class="settings-section">
+          <div class="card-title" style="margin-bottom:8px;padding-left:4px">👷 Staff Management</div>
+          <div class="settings-item" onclick="openStaffSetup()">
+            <div class="si-icon" style="background:#EEF2FF">👷</div>
+            <div class="si-text">
+              <div class="si-label">Create / Edit Staff Account</div>
+              <div class="si-sub" id="staffStatusLabel">No staff account yet</div>
+            </div>
+            <span class="si-arrow">›</span>
+          </div>
+          <div class="settings-item" onclick="Pages.show('staffLoginPage')">
+            <div class="si-icon" style="background:#EEF2FF">🔑</div>
+            <div class="si-text">
+              <div class="si-label">Open Staff Login</div>
+              <div class="si-sub">Give this to your staff member</div>
+            </div>
+            <span class="si-arrow">›</span>
+          </div>
+        </div>
+
+        <!-- SMS Report -->
+        <div class="settings-section">
+          <div class="card-title" style="margin-bottom:8px;padding-left:4px">📱 SMS Daily Report</div>
+          <div class="settings-item" onclick="openSmsSettings()">
+            <div class="si-icon" style="background:var(--green-pale)">📨</div>
+            <div class="si-text">
+              <div class="si-label">SMS Profit Report</div>
+              <div class="si-sub" id="smsStatusLabel">Not configured</div>
             </div>
             <span class="si-arrow">›</span>
           </div>
@@ -508,13 +558,11 @@
           <div class="card">
             <div style="font-size:0.78rem;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:8px">STATUS</div>
             <div id="subscriptionStatus" style="font-size:1rem;font-weight:700;margin-bottom:12px">Loading...</div>
-            <button class="btn btn-gold" onclick="openPaywall()">
-              💳 Upgrade — KSh 200/month
-            </button>
+            <button class="btn btn-gold" onclick="openPaywall()">💳 Upgrade — KSh 200/month</button>
           </div>
         </div>
 
-        <!-- Export -->
+        <!-- Reports -->
         <div class="settings-section">
           <div class="card-title" style="margin-bottom:8px;padding-left:4px">Reports</div>
           <div class="settings-item" onclick="openModal('exportModal')">
@@ -527,16 +575,113 @@
           </div>
         </div>
 
+        <!-- Help / Tour -->
+        <div class="settings-section">
+          <div class="card-title" style="margin-bottom:8px;padding-left:4px">Help</div>
+          <div class="settings-item" onclick="startOnboarding()">
+            <div class="si-icon" style="background:var(--blue-light)">🎓</div>
+            <div class="si-text">
+              <div class="si-label">Replay App Tour</div>
+              <div class="si-sub">Guided walkthrough of all features</div>
+            </div>
+            <span class="si-arrow">›</span>
+          </div>
+        </div>
+
         <!-- Logout -->
         <div class="settings-section">
           <button class="btn btn-danger" onclick="Auth.logout()">🚪 Log Out</button>
         </div>
 
-        <!-- Version -->
         <p style="text-align:center;margin-top:20px;font-size:0.75rem;color:var(--muted)">BizCount v1.0 · Made for Kenya 🇰🇪</p>
 
       </div>
     </div><!-- end settings tab -->
+
+    <!-- ======== HISTORY TAB ======== -->
+    <div id="tab-history" class="tab-content">
+      <div class="main-content">
+        <h2 style="margin-bottom:4px">📅 Profit History</h2>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px">Tap any date to see that day's full breakdown</p>
+
+        <!-- Date Picker -->
+        <div class="card" style="padding:14px 16px;margin-bottom:14px">
+          <div class="form-group" style="margin-bottom:8px">
+            <label>Select a Date</label>
+            <input type="date" id="historyDatePicker" onchange="loadHistoryDate(this.value)"
+              style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:8px;font-size:1rem;font-family:var(--font-main)" />
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-sm btn-secondary" onclick="loadHistoryDate(getYesterday())">Yesterday</button>
+            <button class="btn btn-sm btn-secondary" onclick="loadHistoryDate(getLast(2))">2 days ago</button>
+            <button class="btn btn-sm btn-secondary" onclick="loadHistoryDate(getLast(7))">7 days ago</button>
+            <button class="btn btn-sm btn-outline" onclick="loadHistoryDate(getLast(30))">30 days ago</button>
+          </div>
+        </div>
+
+        <!-- History Result -->
+        <div id="historyResult" style="display:none">
+
+          <!-- Date header -->
+          <div style="text-align:center;margin-bottom:12px">
+            <div style="font-size:0.75rem;font-weight:800;text-transform:uppercase;color:var(--muted);letter-spacing:0.5px">Showing results for</div>
+            <div style="font-size:1.1rem;font-weight:900;color:var(--dark)" id="historyDateLabel"></div>
+          </div>
+
+          <!-- Mini hero -->
+          <div class="today-hero" id="historyHero" style="margin-bottom:12px">
+            <div class="label">NET PROFIT</div>
+            <div class="big-number" id="historyProfit">KSh 0</div>
+            <div class="sub-label" id="historyProfitSub">Revenue minus stock cost</div>
+          </div>
+
+          <!-- Breakdown -->
+          <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+            <div class="money-row">
+              <div class="mr-left"><span class="mr-icon">💰</span><div><div class="mr-label">Revenue</div><div class="mr-sub">Cash collected</div></div></div>
+              <span class="mr-value" id="historyRevenue">KSh 0</span>
+            </div>
+            <div class="money-row deduct">
+              <div class="mr-left"><span class="mr-icon">📦</span><div><div class="mr-label">Stock Cost</div><div class="mr-sub">Goods sold</div></div></div>
+              <span class="mr-value minus" id="historyCOGS">-KSh 0</span>
+            </div>
+            <div class="money-row deduct">
+              <div class="mr-left"><span class="mr-icon">🧾</span><div><div class="mr-label">Expenses</div><div class="mr-sub">Other costs</div></div></div>
+              <span class="mr-value minus" id="historyExpenses">-KSh 0</span>
+            </div>
+            <div class="money-row result">
+              <div class="mr-left"><span class="mr-icon">✅</span><div><div class="mr-label" style="font-weight:900">= Net Profit</div></div></div>
+              <span class="mr-value result-val" id="historyNet">KSh 0</span>
+            </div>
+          </div>
+
+          <!-- Sales that day -->
+          <div class="section-header" style="margin-top:0"><h3>💰 Sales That Day</h3></div>
+          <div class="card" style="padding:12px 16px;margin-bottom:14px">
+            <div id="historySalesList">
+              <div class="empty-state" style="padding:16px 0"><div class="e-icon">🛒</div><div class="e-text">No sales on this date</div></div>
+            </div>
+          </div>
+
+          <!-- Expenses that day -->
+          <div class="section-header" style="margin-top:0"><h3>🧾 Expenses That Day</h3></div>
+          <div class="card" style="padding:12px 16px">
+            <div id="historyExpensesList">
+              <div class="empty-state" style="padding:16px 0"><div class="e-icon">📋</div><div class="e-text">No expenses on this date</div></div>
+            </div>
+          </div>
+
+        </div><!-- end historyResult -->
+
+        <!-- Empty state before selection -->
+        <div id="historyEmpty" style="text-align:center;padding:40px 20px;color:var(--muted)">
+          <div style="font-size:2.5rem;margin-bottom:12px">📅</div>
+          <div style="font-weight:700;font-size:0.95rem">Select a date above</div>
+          <div style="font-size:0.82rem;margin-top:4px">or tap Yesterday to start</div>
+        </div>
+
+      </div>
+    </div><!-- end history tab -->
 
   </div><!-- end tab wrapper -->
 
@@ -550,13 +695,13 @@
       <span class="nav-icon">📦</span>
       <span class="nav-label">Products</span>
     </button>
+    <button class="nav-item" data-tab="history" onclick="openTab('history')">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">History</span>
+    </button>
     <button class="nav-item" data-tab="debts" onclick="openTab('debts'); document.getElementById('debtTotalBig').textContent = fmt(Debts.totalOwed())">
       <span class="nav-icon">📝</span>
       <span class="nav-label">Madeni</span>
-    </button>
-    <button class="nav-item" data-tab="expenses" onclick="openTab('expenses')">
-      <span class="nav-icon">🧾</span>
-      <span class="nav-label">Expenses</span>
     </button>
     <button class="nav-item" data-tab="settings" onclick="openTab('settings')">
       <span class="nav-icon">⚙️</span>
@@ -955,29 +1100,232 @@
 </div>
 
 <!-- ============================================================
-     ONBOARDING TOUR
-     Shown to new users after first registration
+     STAFF LOGIN PAGE
      ============================================================ -->
-<div id="onboardingOverlay" class="hidden" style="
-  position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;
-  display:flex;align-items:flex-end;justify-content:center;">
-  <div style="background:white;border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:28px 24px 48px;position:relative">
+<div id="staffLoginPage" class="page">
+  <div class="auth-screen">
+    <div class="auth-hero">
+      <div class="auth-logo">
+        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="44" height="44" rx="12" fill="#1A7A4A"/>
+          <circle cx="22" cy="16" r="6" fill="white" fill-opacity="0.9"/>
+          <path d="M10 36c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h1 style="color:white">Staff <span style="color:var(--gold)">Login</span></h1>
+      <p class="tagline">Enter your staff PIN to continue</p>
+    </div>
+    <div class="auth-card">
+      <h2>Staff Access 👷</h2>
+      <p class="sub" id="staffShopName">Loading shop...</p>
+      <div class="form-group">
+        <label>Staff PIN (4 digits)</label>
+        <div class="input-icon-wrap">
+          <span class="icon">🔒</span>
+          <input type="password" id="staffPinInput" placeholder="Enter your PIN" maxlength="4" inputmode="numeric"/>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="handleStaffLogin()">🚀 Enter Shop</button>
+      <p class="auth-link"><span onclick="Pages.show('loginPage')">← Owner Login</span></p>
+    </div>
+  </div>
+</div>
 
-    <!-- Step indicator dots -->
-    <div style="display:flex;justify-content:center;gap:8px;margin-bottom:20px" id="onboardDots"></div>
+<!-- ============================================================
+     STAFF APP PAGE — limited view
+     ============================================================ -->
+<div id="staffAppPage" class="page flex-col">
+  <div class="top-bar">
+    <div class="logo-text">Biz<span>Count</span> <span style="font-size:0.7rem;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:10px;font-weight:700">STAFF</span></div>
+    <div class="user-pill" id="staffNameBadge">Staff</div>
+    <button class="icon-btn" onclick="staffLogout()">🚪</button>
+  </div>
 
-    <!-- Step content -->
-    <div id="onboardContent"></div>
+  <div style="flex:1;overflow-y:auto;padding:16px 16px 90px">
 
-    <!-- Buttons -->
-    <div style="display:flex;gap:10px;margin-top:24px">
-      <button class="btn btn-outline" id="onboardSkip" onclick="finishOnboarding()" style="flex:0.4;padding:14px;font-size:0.88rem">
-        Skip
+    <!-- Staff cannot see profits — just a welcome -->
+    <div style="background:var(--green-pale);border-radius:12px;padding:16px;margin-bottom:16px;text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:6px">👷</div>
+      <div style="font-weight:800;font-size:1rem;color:var(--green)">Staff Mode</div>
+      <div style="font-size:0.8rem;color:var(--mid);margin-top:4px">You can record sales and add expenses</div>
+    </div>
+
+    <!-- Staff quick actions -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <button class="btn btn-primary" onclick="openRecordSale()" style="padding:20px;font-size:1rem;flex-direction:column;gap:6px">
+        <span style="font-size:1.8rem">💰</span>Record Sale
       </button>
-      <button class="btn btn-primary" id="onboardNext" onclick="nextOnboardStep()" style="flex:1;padding:14px;font-size:1rem">
-        Next →
+      <button class="btn btn-secondary" onclick="openAddExpense()" style="padding:20px;font-size:1rem;flex-direction:column;gap:6px">
+        <span style="font-size:1.8rem">🧾</span>Add Expense
       </button>
     </div>
+
+    <!-- Staff recent activity (sales only, no profit amounts) -->
+    <div class="section-header"><h3>Recent Sales</h3></div>
+    <div class="card" style="padding:12px 16px">
+      <div id="staffRecentSales"></div>
+    </div>
+
+  </div>
+
+  <nav class="bottom-nav" style="position:fixed">
+    <button class="nav-item active" style="flex:1;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 4px 8px;border:none;background:transparent;cursor:pointer">
+      <span style="font-size:1.35rem">🏠</span>
+      <span style="font-size:0.65rem;font-weight:700;color:var(--green);text-transform:uppercase">Home</span>
+    </button>
+    <button onclick="staffLogout()" style="flex:1;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 4px 8px;border:none;background:transparent;cursor:pointer;display:flex">
+      <span style="font-size:1.35rem">🚪</span>
+      <span style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase">Log Out</span>
+    </button>
+  </nav>
+</div>
+
+<!-- STAFF SETUP MODAL -->
+<div id="staffSetupModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">👷 Create Staff Account</div>
+    <p style="font-size:0.88rem;color:var(--mid);margin-bottom:16px">
+      Staff can record sales and expenses but <strong>cannot see your profit or earnings</strong>.
+    </p>
+    <div class="form-group">
+      <label>Staff Name</label>
+      <input type="text" id="staffName" placeholder="e.g. John Kamau" />
+    </div>
+    <div class="form-group">
+      <label>Staff PIN (4 digits)</label>
+      <input type="password" id="staffPinNew" placeholder="Create a PIN for staff" maxlength="4" inputmode="numeric"/>
+    </div>
+    <div class="form-group">
+      <label>Confirm Staff PIN</label>
+      <input type="password" id="staffPinNew2" placeholder="Repeat PIN" maxlength="4" inputmode="numeric"/>
+    </div>
+    <div style="background:var(--gold-light);border:1.5px solid var(--gold);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:0.82rem;color:#8A5A00;font-weight:600">
+      ⚠️ Staff will see product names and quantities but <strong>no profit amounts</strong>.
+    </div>
+    <button class="btn btn-primary" onclick="saveStaffAccount()">✅ Create Staff Account</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('staffSetupModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- SMS SETTINGS MODAL -->
+<div id="smsSettingsModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📱 Daily SMS Report</div>
+    <p style="font-size:0.88rem;color:var(--mid);margin-bottom:16px">
+      Receive a daily profit summary SMS at <strong>10:30 PM</strong> every night.
+    </p>
+
+    <div class="form-group">
+      <label>Owner Number (primary)</label>
+      <div class="mpesa-input-wrap">
+        <input type="tel" id="smsPhone1" placeholder="7XX XXX XXX" inputmode="numeric" maxlength="9"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Second Number (optional)</label>
+      <div class="mpesa-input-wrap">
+        <input type="tel" id="smsPhone2" placeholder="7XX XXX XXX" inputmode="numeric" maxlength="9"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>SMS Time</label>
+      <input type="time" id="smsTime" value="22:30"
+        style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:8px;font-size:1rem"/>
+    </div>
+
+    <!-- Africa's Talking config -->
+    <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Africa's Talking API (SMS Provider)</div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label>API Key</label>
+        <input type="text" id="atApiKey" placeholder="Your AT API key" />
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>Username</label>
+        <input type="text" id="atUsername" placeholder="Your AT username (sandbox for testing)" />
+      </div>
+      <p style="font-size:0.72rem;color:var(--muted);margin-top:8px">
+        Get free API keys at <strong>africastalking.com</strong> — KSh 1 per SMS approx.
+      </p>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveSmsSettings()">✅ Save SMS Settings</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="sendTestSms()">📨 Send Test SMS Now</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('smsSettingsModal')">Cancel</button>
+  </div>
+</div>
+     Highlights real parts of the screen with a cutout spotlight
+     ============================================================ -->
+
+<!-- Dark overlay with spotlight cutout -->
+<div id="tourOverlay" class="hidden" style="position:fixed;inset:0;z-index:3000;pointer-events:none">
+  <!-- SVG mask for spotlight -->
+  <svg id="tourSvg" style="position:absolute;inset:0;width:100%;height:100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <mask id="spotMask">
+        <rect width="100%" height="100%" fill="white"/>
+        <rect id="spotCutout" x="0" y="0" width="0" height="0" rx="12" fill="black"/>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" fill="rgba(0,0,0,0.75)" mask="url(#spotMask)"/>
+    <!-- Pulsing border around spotlight -->
+    <rect id="spotBorder" x="0" y="0" width="0" height="0" rx="12" fill="none" stroke="#F5A623" stroke-width="3" opacity="0.9"/>
+  </svg>
+</div>
+
+<!-- Tour tooltip card -->
+<div id="tourTooltip" class="hidden" style="
+  position:fixed;z-index:3001;
+  left:50%;transform:translateX(-50%);
+  width:calc(100% - 32px);max-width:448px;
+  background:white;border-radius:16px;
+  padding:18px 18px 14px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.4);
+  pointer-events:all;
+">
+  <!-- Arrow pointing up or down -->
+  <div id="tourArrow" style="
+    position:absolute;left:50%;transform:translateX(-50%);
+    width:0;height:0;
+    border-left:10px solid transparent;
+    border-right:10px solid transparent;
+  "></div>
+
+  <!-- Step dots -->
+  <div id="tourDots" style="display:flex;justify-content:center;gap:6px;margin-bottom:12px"></div>
+
+  <!-- Content -->
+  <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px">
+    <div id="tourIcon" style="font-size:1.8rem;flex-shrink:0;line-height:1"></div>
+    <div>
+      <div id="tourTitle" style="font-size:1rem;font-weight:900;color:#1A1D23;margin-bottom:4px"></div>
+      <div id="tourBody" style="font-size:0.85rem;color:#4A5568;line-height:1.5"></div>
+    </div>
+  </div>
+
+  <!-- Tip box -->
+  <div id="tourTip" style="
+    background:#E8F7EF;border-left:3px solid #1A7A4A;border-radius:0 8px 8px 0;
+    padding:8px 12px;font-size:0.78rem;font-weight:700;color:#1A7A4A;
+    margin-bottom:14px;
+  "></div>
+
+  <!-- Buttons -->
+  <div style="display:flex;gap:8px">
+    <button onclick="skipTour()" style="
+      flex:0.35;padding:12px;background:transparent;border:2px solid #E2E8F0;
+      border-radius:8px;font-family:'Nunito',sans-serif;font-size:0.85rem;
+      font-weight:800;color:#8A95A3;cursor:pointer;
+    ">Skip</button>
+    <button onclick="nextTourStep()" id="tourNextBtn" style="
+      flex:1;padding:12px;background:#1A7A4A;border:none;
+      border-radius:8px;font-family:'Nunito',sans-serif;font-size:0.95rem;
+      font-weight:800;color:white;cursor:pointer;
+      box-shadow:0 4px 12px rgba(26,122,74,0.35);
+    ">Next →</button>
   </div>
 </div>
 
