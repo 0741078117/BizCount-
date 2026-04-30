@@ -175,8 +175,6 @@
 
         <!-- THE 5-LINE MONEY CARD -->
         <div class="card" style="padding:0;overflow:hidden">
-
-          <!-- Row 1: Revenue -->
           <div class="money-row">
             <div class="mr-left">
               <span class="mr-icon">💰</span>
@@ -187,8 +185,6 @@
             </div>
             <span class="mr-value" id="bdRevenue">KSh 0</span>
           </div>
-
-          <!-- Row 2: Stock Cost -->
           <div class="money-row deduct">
             <div class="mr-left">
               <span class="mr-icon">📦</span>
@@ -199,8 +195,6 @@
             </div>
             <span class="mr-value minus" id="bdCOGS">-KSh 0</span>
           </div>
-
-          <!-- Row 3: NET PROFIT — highlighted -->
           <div class="money-row result" id="netProfitRow">
             <div class="mr-left">
               <span class="mr-icon">📈</span>
@@ -211,20 +205,16 @@
             </div>
             <span class="mr-value result-val" id="bdNetProfit">KSh 0</span>
           </div>
-
-          <!-- Row 4: Rent Savings -->
           <div class="money-row deduct">
             <div class="mr-left">
               <span class="mr-icon">🏠</span>
               <div>
                 <div class="mr-label">Set Aside for Rent</div>
-                <div class="mr-sub">Daily saving for end-of-month rent</div>
+                <div class="mr-sub" id="rentSaveSubLabel">Daily saving (tap below to confirm)</div>
               </div>
             </div>
             <span class="mr-value minus" id="bdRentSave">-KSh 0</span>
           </div>
-
-          <!-- Row 5: CASH YOU CAN USE — big green -->
           <div class="money-row cash-use" id="cashUseRow">
             <div class="mr-left">
               <span class="mr-icon">✅</span>
@@ -235,8 +225,65 @@
             </div>
             <span class="mr-value cash-val" id="bdCanUse">KSh 0</span>
           </div>
+        </div>
 
-        </div><!-- end money card -->
+        <!-- ⚡ QUICK ACTIONS — right under net profit -->
+        <div class="section-header" style="margin-top:14px"><h3>⚡ Quick Actions</h3></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <button class="btn btn-primary" onclick="openRecordSale()" style="font-size:0.9rem;padding:14px">💰 Record Sale</button>
+          <button class="btn btn-secondary" onclick="openAddExpense()" style="font-size:0.9rem;padding:14px">📋 Add Expense</button>
+          <button class="btn btn-outline" onclick="openAddDebt()" style="font-size:0.9rem;padding:14px">📝 Add Madeni</button>
+          <button class="btn btn-outline" onclick="openAddProduct()" style="font-size:0.9rem;padding:14px">📦 Add Product</button>
+        </div>
+
+        <!-- 🏠 RENT CALCULATOR CARD -->
+        <div class="card" id="rentCalcCard">
+          <div class="card-header">
+            <div class="card-title">🏠 Rent Savings Calculator</div>
+            <button class="btn btn-sm btn-secondary" onclick="openRentSettings()">⚙️ Edit</button>
+          </div>
+
+          <!-- Daily amount formula display -->
+          <div class="rent-formula" id="rentFormula">
+            <div class="rf-part">
+              <div class="rf-val" id="rfRent">KSh 0</div>
+              <div class="rf-label">Monthly Rent</div>
+            </div>
+            <div class="rf-op">÷</div>
+            <div class="rf-part">
+              <div class="rf-val" id="rfDays">24</div>
+              <div class="rf-label">Days Left</div>
+            </div>
+            <div class="rf-op">=</div>
+            <div class="rf-part highlight">
+              <div class="rf-val" id="rfDaily">KSh 0</div>
+              <div class="rf-label">Save Today</div>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="progress-bar-wrap" style="margin:12px 0 10px">
+            <div class="p-labels">
+              <span id="rentProgressLabel">KSh 0 / KSh 0 saved</span>
+              <span id="rentProgressPct">0%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="rentProgressFill" style="width:0%"></div>
+            </div>
+          </div>
+
+          <!-- I SAVED TODAY button -->
+          <div id="savedTodayWrap">
+            <button class="btn btn-primary" id="savedTodayBtn" onclick="markRentSavedToday()" style="font-size:1rem;padding:16px;letter-spacing:0.3px">
+              🏠 I Saved Today — <span id="savedTodayAmt">KSh 0</span>
+            </button>
+            <div id="savedTodayConfirm" class="hidden" style="background:var(--green-pale);border:2px solid var(--green);border-radius:8px;padding:12px;text-align:center;margin-top:4px">
+              <div style="font-size:1.1rem">✅</div>
+              <div style="font-size:0.88rem;font-weight:800;color:var(--green)">Rent saved today! Deducted from profit.</div>
+              <div style="font-size:0.75rem;color:var(--mid);margin-top:2px" id="savedTodayMsg"></div>
+            </div>
+          </div>
+        </div>
 
         <!-- Stat Strip -->
         <div class="stat-strip">
@@ -262,31 +309,6 @@
             <div class="ss-icon">📦</div>
             <div class="ss-val" style="color:var(--blue)" id="statStockVal">KSh 0</div>
             <div class="ss-label">Stock Value</div>
-          </div>
-        </div>
-
-        <!-- Rent Progress -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">🏠 Rent Progress This Month</div>
-            <button class="btn btn-sm btn-secondary" onclick="openRentSettings()">⚙️ Edit</button>
-          </div>
-          <div class="progress-bar-wrap">
-            <div class="p-labels">
-              <span id="rentProgressLabel">KSh 0 / KSh 0</span>
-              <span id="rentProgressPct">0%</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" id="rentProgressFill" style="width:0%"></div>
-            </div>
-          </div>
-          <div class="save-box" style="margin-top:12px">
-            <div class="save-icon">💵</div>
-            <div class="save-text">
-              <div class="st-label">Save Daily For Rent</div>
-              <div class="st-amount" id="dailySaveAmt">KSh 0</div>
-              <div class="st-sub" id="dailySaveSub">days remaining this month</div>
-            </div>
           </div>
         </div>
 
@@ -318,15 +340,6 @@
             <div style="font-size:0.6rem;font-weight:800;text-transform:uppercase;color:var(--blue);margin:3px 0">Stock Value</div>
             <div style="font-size:1rem;font-weight:900;color:var(--blue)" id="cfStockVal">KSh 0</div>
           </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="section-header"><h3>⚡ Quick Actions</h3></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-          <button class="btn btn-primary" onclick="openRecordSale()" style="font-size:0.9rem;padding:14px">💰 Record Sale</button>
-          <button class="btn btn-secondary" onclick="openAddExpense()" style="font-size:0.9rem;padding:14px">📋 Add Expense</button>
-          <button class="btn btn-outline" onclick="openAddDebt()" style="font-size:0.9rem;padding:14px">📝 Add Madeni</button>
-          <button class="btn btn-outline" onclick="openAddProduct()" style="font-size:0.9rem;padding:14px">📦 Add Product</button>
         </div>
 
         <!-- Recent Activity -->
@@ -938,6 +951,33 @@
     </button>
 
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('exportModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     ONBOARDING TOUR
+     Shown to new users after first registration
+     ============================================================ -->
+<div id="onboardingOverlay" class="hidden" style="
+  position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:2000;
+  display:flex;align-items:flex-end;justify-content:center;">
+  <div style="background:white;border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:28px 24px 48px;position:relative">
+
+    <!-- Step indicator dots -->
+    <div style="display:flex;justify-content:center;gap:8px;margin-bottom:20px" id="onboardDots"></div>
+
+    <!-- Step content -->
+    <div id="onboardContent"></div>
+
+    <!-- Buttons -->
+    <div style="display:flex;gap:10px;margin-top:24px">
+      <button class="btn btn-outline" id="onboardSkip" onclick="finishOnboarding()" style="flex:0.4;padding:14px;font-size:0.88rem">
+        Skip
+      </button>
+      <button class="btn btn-primary" id="onboardNext" onclick="nextOnboardStep()" style="flex:1;padding:14px;font-size:1rem">
+        Next →
+      </button>
+    </div>
   </div>
 </div>
 

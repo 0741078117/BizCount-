@@ -686,7 +686,15 @@ const RentTracker = {
     return daysLeft > 0 ? Math.ceil(rent / daysLeft) : rent;
   },
 
-  monthSaved: () => DailySavings.monthRentSaved(),
+  monthSaved: () => {
+    // Count days user tapped "I Saved Today" × daily saving
+    // RentSavings is defined later in the file so we reference via function
+    const records  = DB.get('rent_saved_days', []);
+    const month    = Dates.today().slice(0, 7);
+    const daysSaved= records.filter(d => d.startsWith(month)).length;
+    const dailyAmt = RentTracker.dailySavingsNeeded();
+    return daysSaved * dailyAmt;
+  },
 
   rentProgress: () => {
     const settings = Data.getSettings();
@@ -732,28 +740,28 @@ function renderDashboard() {
   const settings = Data.getSettings();
 
   // ── THE 5 NUMBERS ────────────────────────────────────────
-  // 1. Revenue: total cash collected from sales today
-  const revenue      = Sales.todayRevenue();
-  // 2. Stock cost: buying price × qty for every item sold today
-  const stockCost    = Sales.todayCOGS();
-  // 3. Net Profit: revenue minus stock cost (the real earning)
-  const netProfit    = revenue - stockCost;
-  // 4. Daily rent saving
-  const rentSave     = RentTracker.dailySavingsNeeded();
-  // 5. Cash you can use: net profit minus rent saving
-  const cashCanUse   = netProfit - rentSave;
+  const revenue   = Sales.todayRevenue();
+  const stockCost = Sales.todayCOGS();
+  const netProfit = revenue - stockCost;
+  const rentSave  = RentTracker.dailySavingsNeeded();
+
+  // Only deduct rent saving if user has already tapped "I Saved Today"
+  const savedToday    = RentSavings.savedToday();
+  const rentDeducted  = savedToday ? rentSave : 0;
+  const cashCanUse    = netProfit - rentDeducted;
 
   // ── MONTH numbers ────────────────────────────────────────
-  const monthProfit  = Sales.monthTotal();
-  const totalDebt    = Debts.totalOwed();
-  const todayExpenses= Expenses.todayTotal();
-  const rent         = parseFloat(settings.rent) || 0;
-  const monthSaved   = RentTracker.monthSaved();
-  const rentProgress = RentTracker.rentProgress();
+  const monthProfit   = Sales.monthTotal();
+  const totalDebt     = Debts.totalOwed();
+  const todayExpenses = Expenses.todayTotal();
+  const rent          = parseFloat(settings.rent) || 0;
+  const monthSaved    = RentTracker.monthSaved();
+  const rentProgress  = RentTracker.rentProgress();
+  const daysLeft      = Dates.daysInMonth() - Dates.dayOfMonth() + 1;
 
-  // ── Stock value (all products: qty × buy price) ──────────
-  const products     = Data.getProducts();
-  const stockValue   = products.reduce((s, p) => s + (p.quantity * p.buyPrice), 0);
+  // ── Stock value ──────────────────────────────────────────
+  const products  = Data.getProducts();
+  const stockValue= products.reduce((s, p) => s + (p.quantity * p.buyPrice), 0);
 
   // ── Hero ─────────────────────────────────────────────────
   _setEl('heroProfitNum', fmt(netProfit));
@@ -766,40 +774,42 @@ function renderDashboard() {
     : 'linear-gradient(135deg, #C0392B 0%, #922B21 100%)';
 
   // ── 5-line money card ────────────────────────────────────
-  _setEl('bdRevenue',  fmt(revenue));
-  _setEl('bdCOGS',    `-${fmt(stockCost)}`);
+  _setEl('bdRevenue',   fmt(revenue));
+  _setEl('bdCOGS',     `-${fmt(stockCost)}`);
   _setEl('bdNetProfit', fmt(netProfit));
-  _setEl('bdRentSave', `-${fmt(rentSave)}`);
+  _setEl('bdRentSave',  savedToday ? `-${fmt(rentSave)}` : `${fmt(rentSave)} (not saved yet)`);
   _setEl('bdCanUse',    fmt(cashCanUse));
 
-  // Colour net profit row based on value
   const netRow = document.getElementById('netProfitRow');
   if (netRow) netRow.style.background = netProfit >= 0 ? '#F0FAF4' : '#FEF0F0';
   const netVal = document.getElementById('bdNetProfit');
   if (netVal) netVal.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red)';
-
-  // Colour cash-can-use row
   const cashRow = document.getElementById('cashUseRow');
   if (cashRow) cashRow.style.background = cashCanUse >= 0 ? 'var(--green)' : 'var(--red)';
-  const cashVal = document.getElementById('bdCanUse');
-  if (cashVal) cashVal.style.color = 'white';
 
-  // ── Stat strip ───────────────────────────────────────────
-  _setEl('statExpenses',   fmt(todayExpenses));
-  _setEl('statDebt',       fmt(totalDebt));
-  _setEl('statMonthProfit',fmt(monthProfit));
-  _setEl('statStockVal',   fmt(stockValue));
+  // ── Rent formula display ─────────────────────────────────
+  _setEl('rfRent',  fmt(rent));
+  _setEl('rfDays',  daysLeft);
+  _setEl('rfDaily', fmt(rentSave));
+  _setEl('savedTodayAmt', fmt(rentSave));
 
-  // ── Rent progress ────────────────────────────────────────
-  _setEl('rentProgressLabel', `${fmt(monthSaved)} / ${fmt(rent)}`);
-  _setEl('rentProgressPct', `${rentProgress}%`);
+  // ── Rent progress bar ────────────────────────────────────
+  _setEl('rentProgressLabel', `${fmt(monthSaved)} / ${fmt(rent)} saved`);
+  _setEl('rentProgressPct',   `${rentProgress}%`);
   const fill = document.getElementById('rentProgressFill');
   if (fill) {
     fill.style.width = `${rentProgress}%`;
     fill.className = `progress-fill ${rentProgress < 50 ? 'danger' : rentProgress < 80 ? 'gold' : ''}`;
   }
-  _setEl('dailySaveAmt', fmt(rentSave));
-  _setEl('dailySaveSub', `${Dates.daysInMonth() - Dates.dayOfMonth() + 1} days remaining this month`);
+
+  // ── I Saved Today button state ───────────────────────────
+  RentSavings.renderSavedTodayButton();
+
+  // ── Stat strip ───────────────────────────────────────────
+  _setEl('statExpenses',    fmt(todayExpenses));
+  _setEl('statDebt',        fmt(totalDebt));
+  _setEl('statMonthProfit', fmt(monthProfit));
+  _setEl('statStockVal',    fmt(stockValue));
 
   // ── Month split ──────────────────────────────────────────
   const businessMoney = Math.max(0, monthProfit - Expenses.monthTotal()
@@ -1757,30 +1767,200 @@ function exportPrintReport() {
 }
 
 // ============================================================
+// RENT SAVINGS — "I Saved Today" system
+// Deducts rent saving from profit when user taps the button
+// ============================================================
+
+const RentSavings = {
+  // Check if user already tapped "I Saved Today" for today
+  savedToday: () => {
+    const records = DB.get('rent_saved_days', []);
+    return records.includes(Dates.today());
+  },
+
+  // Mark today as saved — deducts from profit tracking
+  markToday: () => {
+    const records = DB.get('rent_saved_days', []);
+    if (!records.includes(Dates.today())) {
+      records.push(Dates.today());
+      DB.set('rent_saved_days', records);
+    }
+    // Also log in DailySavings for rent progress bar
+    DailySavings.setAsideToday();
+  },
+
+  // Count of days saved this month
+  daysSavedThisMonth: () => {
+    const month = Dates.today().slice(0, 7);
+    const records = DB.get('rent_saved_days', []);
+    return records.filter(d => d.startsWith(month)).length;
+  },
+
+  // Render the button state (saved vs not saved)
+  renderSavedTodayButton: () => {
+    const btn     = document.getElementById('savedTodayBtn');
+    const confirm = document.getElementById('savedTodayConfirm');
+    const msg     = document.getElementById('savedTodayMsg');
+    if (!btn || !confirm) return;
+
+    const saved      = RentSavings.savedToday();
+    const daysSaved  = RentSavings.daysSavedThisMonth();
+    const daysInMonth= Dates.daysInMonth();
+
+    if (saved) {
+      btn.classList.add('hidden');
+      confirm.classList.remove('hidden');
+      if (msg) msg.textContent = `${daysSaved} of ${daysInMonth} days saved this month 🎯`;
+    } else {
+      btn.classList.remove('hidden');
+      confirm.classList.add('hidden');
+    }
+  }
+};
+
+function markRentSavedToday() {
+  const rentSave = RentTracker.dailySavingsNeeded();
+  if (rentSave <= 0) {
+    showToast('Set your monthly rent first in Settings.', 'error');
+    openRentSettings();
+    return;
+  }
+  RentSavings.markToday();
+  showToast(`🏠 KSh ${rentSave.toLocaleString()} saved for rent today!`, 'success');
+  renderDashboard();
+}
+
+// ============================================================
+// ONBOARDING TOUR — shown once to new users
+// ============================================================
+
+const ONBOARD_STEPS = [
+  {
+    icon: '👋',
+    title: 'Welcome to BizCount!',
+    body: 'This app helps you track your shop money every day. It takes just 2 minutes to set up. Let\'s show you how it works.',
+    tip: '💡 You only need to do this once — then it\'s very easy!'
+  },
+  {
+    icon: '📦',
+    title: 'Step 1 — Add Your Products',
+    body: 'Go to the Products tab. Add every item you sell. Enter the buying price and selling price. BizCount will automatically calculate your profit per item.',
+    tip: '💡 Example: Unga — Buy KSh 130, Sell KSh 160 = KSh 30 profit'
+  },
+  {
+    icon: '💰',
+    title: 'Step 2 — Record Every Sale',
+    body: 'Every time you sell something, tap "Record Sale" on the home screen. Select the product, enter quantity. Your profit updates instantly.',
+    tip: '💡 Even small sales matter. KSh 50 profit × 20 sales = KSh 1,000!'
+  },
+  {
+    icon: '🏠',
+    title: 'Step 3 — Set Your Rent',
+    body: 'Go to Settings and enter your monthly rent. BizCount divides it by days remaining and tells you exactly how much to save each day.',
+    tip: '💡 Tap "I Saved Today" every day you set money aside for rent'
+  },
+  {
+    icon: '📝',
+    title: 'Step 4 — Track Madeni (Debts)',
+    body: 'When a customer takes goods on credit, go to the Madeni tab and record their name and amount. When they pay, tap Pay to clear it.',
+    tip: '💡 Never forget who owes you money again!'
+  },
+  {
+    icon: '📊',
+    title: 'Step 5 — Check Your Dashboard',
+    body: 'The home screen shows your Net Profit every day. Revenue minus stock cost = your real earnings. Then minus rent savings = cash you can actually use.',
+    tip: '💡 Check this number every evening before closing shop'
+  },
+  {
+    icon: '🚀',
+    title: "You're Ready!",
+    body: 'BizCount is now set up for your business. Start by adding your first product. The more you record, the better your business will grow!',
+    tip: '💡 Tap the ⚙️ icon any time to change settings'
+  }
+];
+
+let onboardStep = 0;
+
+function startOnboarding() {
+  onboardStep = 0;
+  const overlay = document.getElementById('onboardingOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  overlay.style.display = 'flex';
+  renderOnboardStep();
+}
+
+function renderOnboardStep() {
+  const step    = ONBOARD_STEPS[onboardStep];
+  const content = document.getElementById('onboardContent');
+  const dots    = document.getElementById('onboardDots');
+  const nextBtn = document.getElementById('onboardNext');
+  const skipBtn = document.getElementById('onboardSkip');
+  if (!content || !step) return;
+
+  // Render dots
+  dots.innerHTML = ONBOARD_STEPS.map((_, i) =>
+    `<div class="onboard-dot${i === onboardStep ? ' active' : ''}"></div>`
+  ).join('');
+
+  // Render content
+  content.innerHTML = `
+    <div class="onboard-icon">${step.icon}</div>
+    <div class="onboard-title">${step.title}</div>
+    <p class="onboard-body">${step.body}</p>
+    <div class="onboard-tip">${step.tip}</div>
+  `;
+
+  // Last step button
+  const isLast = onboardStep === ONBOARD_STEPS.length - 1;
+  nextBtn.textContent = isLast ? "🚀 Let's Start!" : 'Next →';
+  skipBtn.style.display = isLast ? 'none' : 'flex';
+}
+
+function nextOnboardStep() {
+  onboardStep++;
+  if (onboardStep >= ONBOARD_STEPS.length) {
+    finishOnboarding();
+  } else {
+    renderOnboardStep();
+  }
+}
+
+function finishOnboarding() {
+  const overlay = document.getElementById('onboardingOverlay');
+  if (overlay) overlay.style.display = 'none';
+  DB.set('onboarding_done', true);
+  showToast('🎉 Great! Start by adding your first product.', 'success');
+  openTab('products');
+  setTimeout(() => openAddProduct(), 600);
+}
+
+function checkOnboarding() {
+  const done = DB.get('onboarding_done', false);
+  if (!done) {
+    setTimeout(() => startOnboarding(), 800);
+  }
+}
+
+// ============================================================
 // APP INIT
 // ============================================================
 
 function initApp() {
-  // ===== FIREBASE: Check auth state =====
-  // firebase.auth().onAuthStateChanged((user) => { ... })
-
   const user = Data.getUser();
   Pages.show('appPage');
 
-  // Set business name in top bar
   const settings = Data.getSettings();
   const topBarName = document.getElementById('topBarName');
   if (topBarName) topBarName.textContent = settings.businessName || 'My Shop';
 
-  // Load demo data if first time
   loadSampleData();
-
-  // Init trial
   Trial.init();
   Trial.renderBanner();
-
-  // Render default tab
   openTab('home');
+
+  // Show onboarding for new users
+  checkOnboarding();
 }
 
 // ============================================================
