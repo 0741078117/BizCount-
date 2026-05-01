@@ -1,22 +1,13 @@
 /* ============================================================
    BIZCOUNT — Firebase Integration
-   Handles Authentication + Firestore cloud sync
-   
+   Uses Firebase Compat SDK (works from file:// and all browsers)
+
    Project: bizcount-d1064
    ============================================================ */
 
 // ============================================================
-// FIREBASE CONFIG
+// CONFIG + INIT
 // ============================================================
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-         signOut, onAuthStateChanged, updateProfile }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection,
-         addDoc, getDocs, updateDoc, deleteDoc, query,
-         where, orderBy, onSnapshot, serverTimestamp, writeBatch }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyDW5spPmnVA3m4slJ6LHdLuAcoVCpT3-QM",
@@ -28,177 +19,297 @@ const firebaseConfig = {
   measurementId:     "G-607EJQ9G9E"
 };
 
-// ============================================================
-// INIT
-// ============================================================
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
-const firebaseApp = initializeApp(firebaseConfig);
-const auth        = getAuth(firebaseApp);
-const db          = getFirestore(firebaseApp);
+const auth = firebase.auth();
+const db   = firebase.firestore();
 
-// Current user UID (set after login)
+// Current owner UID (set after owner login)
 let currentUID = null;
 
 // ============================================================
 // HELPERS
 // ============================================================
 
-// Build a Firestore path under the user's own folder
-// All data is isolated per user: users/{uid}/products, etc.
-const userCol = (col) => collection(db, 'users', currentUID, col);
-const userDoc = (col, id) => doc(db, 'users', currentUID, col, id);
-const profileDoc = () => doc(db, 'users', currentUID);
+const userCol    = (col)     => db.collection('users/' + currentUID + '/' + col);
+const userDoc    = (col, id) => db.doc('users/' + currentUID + '/' + col + '/' + id);
+const profileDoc = ()        => db.doc('users/' + currentUID);
+const staffAuthDoc = (key)   => db.doc('staffAuth/' + key);
+const TS = () => firebase.firestore.FieldValue.serverTimestamp();
 
-// Convert phone to a fake email for Firebase Auth
-// (Firebase Auth email/password is simplest for PIN-based login)
-// Format: 254712345678@bizcount.app
-const phoneToEmail = (phone) => {
-  let p = phone.replace(/\D/g, '');
-  if (p.startsWith('0')) p = '254' + p.slice(1);
+// Normalise phone to 9-digit key (e.g. "712345678")
+function phoneKey(phone) {
+  let p = (phone || '').replace(/\D/g, '');
+  if (p.startsWith('254')) p = p.slice(3);
+  if (p.startsWith('0'))   p = p.slice(1);
+  return p;
+}
+
+// Owner Firebase Auth email
+function phoneToEmail(phone) {
+  let p = (phone || '').replace(/\D/g, '');
+  if (p.startsWith('0'))   p = '254' + p.slice(1);
   if (!p.startsWith('254')) p = '254' + p;
-  return `${p}@bizcount.app`;
-};
+  return p + '@bizcount.app';
+}
+
+// Staff Firebase Auth email (different namespace from owner)
+function staffToEmail(ownerPhone) {
+  return 'staff_' + phoneKey(ownerPhone) + '@bizcount.app';
+}
 
 // ============================================================
-// FIREBASE AUTH — REGISTER
+// OWNER AUTH — REGISTER
 // ============================================================
 
 async function fbRegister(name, phone, pin) {
-  const email    = phoneToEmail(phone);
-  const password = pin + phone.replace(/\D/g,'').slice(-4); // PIN + last 4 digits as password
+  var email    = phoneToEmail(phone);
+  var password = pin + phone.replace(/\D/g,'').slice(-4);
 
   try {
     showLoadingOverlay('Creating your account...');
-
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    var cred = await auth.createUserWithEmailAndPassword(email, password);
     currentUID = cred.user.uid;
 
-    // Update display name
-    await updateProfile(cred.user, { displayName: name });
-
-    // Save profile to Firestore
-    await setDoc(profileDoc(), {
-      name,
-      phone,
-      businessName: name,
-      createdAt: serverTimestamp(),
-      trial: {
-        start: new Date().toISOString().slice(0,10),
-        paid: false
-      },
-      settings: {
-        rent: 0,
-        dailyRentSaving: 0,
-        restockFund: 200,
-        businessName: name,
-        phone
-      }
+    await cred.user.updateProfile({ displayName: name });
+    await profileDoc().set({
+      name, phone, businessName: name,
+      createdAt: TS(),
+      trial: { start: new Date().toISOString().slice(0,10), paid: false },
+      settings: { rent: 0, dailyRentSaving: 0, restockFund: 200, businessName: name, phone }
     });
 
     hideLoadingOverlay();
     return { ok: true, name };
-
   } catch (e) {
     hideLoadingOverlay();
-    if (e.code === 'auth/email-already-in-use') {
-      return { ok: false, error: 'This phone number already has an account. Please login.' };
-    }
+    if (e.code === 'auth/email-already-in-use')
+      return { ok: false, error: 'This phone already has an account. Please login.' };
     return { ok: false, error: e.message };
   }
 }
 
 // ============================================================
-// FIREBASE AUTH — LOGIN
+// OWNER AUTH — LOGIN
 // ============================================================
 
 async function fbLogin(phone, pin) {
-  const email    = phoneToEmail(phone);
-  const password = pin + phone.replace(/\D/g,'').slice(-4);
+  var email    = phoneToEmail(phone);
+  var password = pin + phone.replace(/\D/g,'').slice(-4);
 
   try {
     showLoadingOverlay('Logging in...');
-    const cred = await signInWithEmailAndPassword(auth, email, password);
+    var cred = await auth.signInWithEmailAndPassword(email, password);
     currentUID = cred.user.uid;
     hideLoadingOverlay();
     return { ok: true };
-
   } catch (e) {
     hideLoadingOverlay();
-    if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
+    if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential')
       return { ok: false, error: 'Account not found. Check your number or register.' };
-    }
-    if (e.code === 'auth/wrong-password') {
+    if (e.code === 'auth/wrong-password')
       return { ok: false, error: 'Wrong PIN. Please try again.' };
-    }
     return { ok: false, error: 'Login failed. Check your internet and try again.' };
   }
 }
 
 // ============================================================
-// FIREBASE AUTH — LOGOUT
+// OWNER AUTH — LOGOUT
 // ============================================================
 
 async function fbLogout() {
-  await signOut(auth);
+  await auth.signOut();
   currentUID = null;
-  // Clear local cache
-  Object.keys(localStorage).filter(k => k.startsWith('bizcount_')).forEach(k => localStorage.removeItem(k));
+  Object.keys(localStorage)
+    .filter(function(k) { return k.startsWith('bizcount_'); })
+    .forEach(function(k) { localStorage.removeItem(k); });
 }
 
 // ============================================================
-// LOAD USER DATA FROM FIRESTORE → LOCAL CACHE
-// Called once after login so app works offline too
+// STAFF ACCOUNT SETUP
+// Creates a real Firebase Auth account for staff using a
+// secondary app — so owner's session is never interrupted.
+// ============================================================
+
+async function createStaffAccount(ownerPhone, staffName, staffPin) {
+  var sEmail    = staffToEmail(ownerPhone);
+  var sPassword = staffPin + phoneKey(ownerPhone).slice(-4);
+  var secondaryApp = null;
+
+  try {
+    secondaryApp = firebase.initializeApp(firebaseConfig, 'staff-setup-' + Date.now());
+    var staffUID;
+
+    try {
+      var cred = await secondaryApp.auth().createUserWithEmailAndPassword(sEmail, sPassword);
+      staffUID  = cred.user.uid;
+    } catch (e) {
+      if (e.code === 'auth/email-already-in-use') {
+        // Account exists — sign in to retrieve UID
+        var cred2 = await secondaryApp.auth().signInWithEmailAndPassword(sEmail, sPassword);
+        staffUID  = cred2.user.uid;
+      } else {
+        throw e;
+      }
+    }
+
+    await secondaryApp.auth().signOut();
+    return { ok: true, staffUID: staffUID };
+
+  } catch (e) {
+    console.error('[Firebase] createStaffAccount:', e);
+    return { ok: false, error: e.message };
+  } finally {
+    if (secondaryApp) { try { await secondaryApp.delete(); } catch(_) {} }
+  }
+}
+
+// ============================================================
+// STAFF AUTH — WRITE staffAuth DOCUMENT
+// Stores credentials + product snapshot so staff can work on
+// any device without needing owner to be logged in.
+// ============================================================
+
+async function writeStaffAuth(ownerPhone, staffName, staffPin, staffUID) {
+  if (!currentUID) return;
+  var key = phoneKey(ownerPhone);
+
+  try {
+    // Snapshot products for staff fresh-device access
+    var productsSnap = await userCol('products').get();
+    var products = [];
+    productsSnap.forEach(function(d) { products.push(Object.assign({ id: d.id }, d.data())); });
+
+    var settingsSnap = await profileDoc().get();
+    var settings = settingsSnap.exists ? (settingsSnap.data().settings || {}) : {};
+
+    await staffAuthDoc(key).set({
+      name:              staffName,
+      pin:               staffPin,
+      staffUID:          staffUID || null,
+      ownerUID:          currentUID,
+      ownerPhone:        ownerPhone,
+      productsSnapshot:  products,
+      settingsSnapshot:  settings,
+      updatedAt:         TS()
+    });
+  } catch(e) { console.error('[Firebase] writeStaffAuth:', e); }
+}
+
+// ============================================================
+// STAFF AUTH — LOGIN
+// Works on ANY device — no owner session needed.
+// Step 1: verify PIN against public staffAuth document
+// Step 2: sign in with staff Firebase account
+// Step 3: populate localStorage from snapshot
+// ============================================================
+
+async function fbStaffLogin(ownerPhone, staffPin) {
+  var key = phoneKey(ownerPhone);
+
+  try {
+    showLoadingOverlay('Checking staff credentials...');
+
+    // 1. Verify PIN (public read — no Firebase Auth needed)
+    var snap = await staffAuthDoc(key).get();
+    if (!snap.exists) {
+      hideLoadingOverlay();
+      return { ok: false, error: 'Shop not found. Check the phone number.' };
+    }
+    var staffData = snap.data();
+    if (staffData.pin !== staffPin) {
+      hideLoadingOverlay();
+      return { ok: false, error: 'Wrong PIN. Try again.' };
+    }
+
+    // 2. Populate localStorage from snapshot (gives staff data on any device)
+    if (staffData.productsSnapshot && staffData.productsSnapshot.length) {
+      DB.set('products', staffData.productsSnapshot);
+    }
+    if (staffData.settingsSnapshot) {
+      DB.set('settings', staffData.settingsSnapshot);
+    }
+    DB.set('staff_account', { name: staffData.name, pin: staffData.pin });
+
+    // 3. Sign in with staff Firebase Auth account (if one was created)
+    if (staffData.staffUID) {
+      try {
+        var sEmail    = staffToEmail(ownerPhone);
+        var sPassword = staffPin + key.slice(-4);
+        await auth.signInWithEmailAndPassword(sEmail, sPassword);
+      } catch(e) {
+        // Firebase auth failed — still allow access with snapshot data
+        console.warn('[Firebase] Staff Firebase sign-in skipped:', e.code);
+      }
+    }
+
+    hideLoadingOverlay();
+    return { ok: true, staffData: staffData };
+
+  } catch (e) {
+    hideLoadingOverlay();
+    console.error('[Firebase] fbStaffLogin:', e);
+    return { ok: false, error: 'Login failed. Check your internet and try again.' };
+  }
+}
+
+// Look up staff record (PIN verification only, no auth sign-in)
+async function fetchStaffAuth(phone) {
+  try {
+    var snap = await staffAuthDoc(phoneKey(phone)).get();
+    return snap.exists ? snap.data() : null;
+  } catch(e) {
+    console.error('[Firebase] fetchStaffAuth:', e);
+    return null;
+  }
+}
+
+// ============================================================
+// LOAD OWNER DATA → LOCAL CACHE
 // ============================================================
 
 async function loadUserDataFromCloud() {
   if (!currentUID) return;
-
   showLoadingOverlay('Loading your business data...');
-
   try {
-    // Load profile + settings
-    const profileSnap = await getDoc(profileDoc());
-    if (profileSnap.exists()) {
-      const profile = profileSnap.data();
+    var profileSnap = await profileDoc().get();
+    if (profileSnap.exists) {
+      var profile = profileSnap.data();
       DB.set('user', { name: profile.name, phone: profile.phone, pin: '****' });
       if (profile.settings) DB.set('settings', profile.settings);
       if (profile.trial)    DB.set('trial',    profile.trial);
     }
 
-    // Load products
-    const productsSnap = await getDocs(userCol('products'));
-    const products = [];
-    productsSnap.forEach(d => products.push({ id: d.id, ...d.data() }));
+    var productsSnap = await userCol('products').get();
+    var products = [];
+    productsSnap.forEach(function(d) { products.push(Object.assign({ id: d.id }, d.data())); });
     DB.set('products', products);
 
-    // Load sales
-    const salesSnap = await getDocs(query(userCol('sales'), orderBy('createdAt', 'desc')));
-    const sales = [];
-    salesSnap.forEach(d => sales.push({ id: d.id, ...d.data() }));
+    var salesSnap = await userCol('sales').orderBy('createdAt', 'desc').get();
+    var sales = [];
+    salesSnap.forEach(function(d) { sales.push(Object.assign({ id: d.id }, d.data())); });
     DB.set('sales', sales);
 
-    // Load debts
-    const debtsSnap = await getDocs(userCol('debts'));
-    const debts = [];
-    debtsSnap.forEach(d => debts.push({ id: d.id, ...d.data() }));
+    var debtsSnap = await userCol('debts').get();
+    var debts = [];
+    debtsSnap.forEach(function(d) { debts.push(Object.assign({ id: d.id }, d.data())); });
     DB.set('debts', debts);
 
-    // Load expenses
-    const expensesSnap = await getDocs(query(userCol('expenses'), orderBy('createdAt', 'desc')));
-    const expenses = [];
-    expensesSnap.forEach(d => expenses.push({ id: d.id, ...d.data() }));
+    var expensesSnap = await userCol('expenses').orderBy('createdAt', 'desc').get();
+    var expenses = [];
+    expensesSnap.forEach(function(d) { expenses.push(Object.assign({ id: d.id }, d.data())); });
     DB.set('expenses', expenses);
 
-    // Load withdrawals
-    const withdrawalsSnap = await getDocs(userCol('withdrawals'));
-    const withdrawals = [];
-    withdrawalsSnap.forEach(d => withdrawals.push({ id: d.id, ...d.data() }));
+    var withdrawalsSnap = await userCol('withdrawals').get();
+    var withdrawals = [];
+    withdrawalsSnap.forEach(function(d) { withdrawals.push(Object.assign({ id: d.id }, d.data())); });
     DB.set('withdrawals', withdrawals);
 
-    // Load daily savings
-    const savingsSnap = await getDocs(userCol('daily_savings'));
-    const savings = [];
-    savingsSnap.forEach(d => savings.push({ id: d.id, ...d.data() }));
+    var savingsSnap = await userCol('daily_savings').get();
+    var savings = [];
+    savingsSnap.forEach(function(d) { savings.push(Object.assign({ id: d.id }, d.data())); });
     DB.set('daily_savings', savings);
 
     hideLoadingOverlay();
@@ -213,192 +324,172 @@ async function loadUserDataFromCloud() {
 }
 
 // ============================================================
-// FIRESTORE SYNC HELPERS
-// All write operations save to BOTH localStorage AND Firestore
+// CLOUD SYNC HELPERS
 // ============================================================
 
-const Cloud = {
+var Cloud = {
 
-  // ── Products ──────────────────────────────────────────────
-  saveProduct: async (product) => {
+  saveProduct: async function(product) {
     if (!currentUID) return;
-    try {
-      await setDoc(userDoc('products', product.id), stripId(product));
-    } catch(e) { console.error('[Cloud] saveProduct:', e); }
+    try { await userDoc('products', product.id).set(stripId(product)); }
+    catch(e) { console.error('[Cloud] saveProduct:', e); }
   },
 
-  deleteProduct: async (id) => {
+  deleteProduct: async function(id) {
     if (!currentUID) return;
-    try { await deleteDoc(userDoc('products', id)); }
+    try { await userDoc('products', id).delete(); }
     catch(e) { console.error('[Cloud] deleteProduct:', e); }
   },
 
-  // ── Sales ─────────────────────────────────────────────────
-  saveSale: async (sale) => {
+  saveSale: async function(sale) {
     if (!currentUID) return;
-    try {
-      await setDoc(userDoc('sales', sale.id), stripId(sale));
-    } catch(e) { console.error('[Cloud] saveSale:', e); }
+    try { await userDoc('sales', sale.id).set(stripId(sale)); }
+    catch(e) { console.error('[Cloud] saveSale:', e); }
   },
 
-  // ── Debts ─────────────────────────────────────────────────
-  saveDebt: async (debt) => {
+  saveDebt: async function(debt) {
     if (!currentUID) return;
-    try {
-      await setDoc(userDoc('debts', debt.id), stripId(debt));
-    } catch(e) { console.error('[Cloud] saveDebt:', e); }
+    try { await userDoc('debts', debt.id).set(stripId(debt)); }
+    catch(e) { console.error('[Cloud] saveDebt:', e); }
   },
 
-  deleteDebt: async (id) => {
+  deleteDebt: async function(id) {
     if (!currentUID) return;
-    try { await deleteDoc(userDoc('debts', id)); }
+    try { await userDoc('debts', id).delete(); }
     catch(e) { console.error('[Cloud] deleteDebt:', e); }
   },
 
-  // ── Expenses ──────────────────────────────────────────────
-  saveExpense: async (expense) => {
+  saveExpense: async function(expense) {
     if (!currentUID) return;
-    try {
-      await setDoc(userDoc('expenses', expense.id), stripId(expense));
-    } catch(e) { console.error('[Cloud] saveExpense:', e); }
+    try { await userDoc('expenses', expense.id).set(stripId(expense)); }
+    catch(e) { console.error('[Cloud] saveExpense:', e); }
   },
 
-  // ── Withdrawals ───────────────────────────────────────────
-  saveWithdrawal: async (w) => {
+  saveWithdrawal: async function(w) {
     if (!currentUID) return;
-    try {
-      await setDoc(userDoc('withdrawals', w.id), stripId(w));
-    } catch(e) { console.error('[Cloud] saveWithdrawal:', e); }
+    try { await userDoc('withdrawals', w.id).set(stripId(w)); }
+    catch(e) { console.error('[Cloud] saveWithdrawal:', e); }
   },
 
-  // ── Settings ──────────────────────────────────────────────
-  saveSettings: async (settings) => {
+  saveSettings: async function(settings) {
     if (!currentUID) return;
     try {
-      await updateDoc(profileDoc(), { settings });
-      // If settings include a staffAccount, mirror it to the public staffAuth collection
-      // so staff can log in from the main portal on any device
-      if (settings.staffAccount) {
-        const profileSnap = await getDoc(profileDoc());
-        const phone = profileSnap.exists() ? profileSnap.data().phone : null;
-        if (phone) {
-          let normalised = phone.replace(/\D/g, '');
-          if (normalised.startsWith('254')) normalised = normalised.slice(3);
-          if (normalised.startsWith('0'))   normalised = normalised.slice(1);
-          const staffAuthDoc = doc(db, 'staffAuth', normalised);
-          await setDoc(staffAuthDoc, {
-            name:     settings.staffAccount.name,
-            pin:      settings.staffAccount.pin,
-            ownerUID: currentUID,
-            updatedAt: serverTimestamp()
-          });
-        }
+      await profileDoc().update({ settings: settings });
+      // Auto-refresh staff snapshot so their data stays current
+      var user     = DB.get('user', null);
+      var staffAcc = DB.get('staff_account', null);
+      if (user && user.phone && staffAcc) {
+        await writeStaffAuth(user.phone, staffAcc.name, staffAcc.pin, null);
       }
     } catch(e) { console.error('[Cloud] saveSettings:', e); }
   },
 
-  // ── Trial / Payment ───────────────────────────────────────
-  saveTrial: async (trial) => {
+  saveTrial: async function(trial) {
     if (!currentUID) return;
-    try {
-      await updateDoc(profileDoc(), { trial });
-    } catch(e) { console.error('[Cloud] saveTrial:', e); }
+    try { await profileDoc().update({ trial: trial }); }
+    catch(e) { console.error('[Cloud] saveTrial:', e); }
   },
 
-  // ── Daily Savings ─────────────────────────────────────────
-  saveDailySaving: async (saving) => {
+  saveDailySaving: async function(saving) {
     if (!currentUID) return;
-    try {
-      await setDoc(userDoc('daily_savings', saving.id), stripId(saving));
-    } catch(e) { console.error('[Cloud] saveDailySaving:', e); }
+    try { await userDoc('daily_savings', saving.id).set(stripId(saving)); }
+    catch(e) { console.error('[Cloud] saveDailySaving:', e); }
   },
 };
 
-// Remove 'id' field before saving to Firestore (id is the document key)
 function stripId(obj) {
-  const { id, ...rest } = obj;
-  return rest;
+  var out = {};
+  Object.keys(obj).forEach(function(k) { if (k !== 'id') out[k] = obj[k]; });
+  return out;
 }
 
 // ============================================================
 // LOADING OVERLAY
 // ============================================================
 
-function showLoadingOverlay(msg = 'Loading...') {
-  let overlay = document.getElementById('loadingOverlay');
+function showLoadingOverlay(msg) {
+  msg = msg || 'Loading...';
+  var overlay = document.getElementById('loadingOverlay');
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'loadingOverlay';
-    overlay.style.cssText = `
-      position:fixed;inset:0;background:rgba(26,122,74,0.92);z-index:9999;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      color:white;font-family:'Nunito',sans-serif;
-    `;
-    overlay.innerHTML = `
-      <div style="font-size:2.5rem;margin-bottom:12px;animation:spin 1s linear infinite">⏳</div>
-      <div id="loadingMsg" style="font-size:1rem;font-weight:800">${msg}</div>
-      <div style="font-size:0.78rem;opacity:0.75;margin-top:6px">Please wait...</div>
-    `;
+    overlay.style.cssText =
+      'position:fixed;inset:0;z-index:9999;background:rgba(26,122,74,0.93);' +
+      'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+      'color:white;font-family:Nunito,sans-serif;';
+    overlay.innerHTML =
+      '<div style="font-size:2.4rem;margin-bottom:14px">⏳</div>' +
+      '<div id="loadingMsg" style="font-size:1rem;font-weight:800">' + msg + '</div>' +
+      '<div style="font-size:0.76rem;opacity:0.72;margin-top:6px">Please wait...</div>';
     document.body.appendChild(overlay);
   } else {
-    const msgEl = overlay.querySelector('#loadingMsg');
-    if (msgEl) msgEl.textContent = msg;
+    var el = overlay.querySelector('#loadingMsg');
+    if (el) el.textContent = msg;
     overlay.style.display = 'flex';
   }
 }
 
 function hideLoadingOverlay() {
-  const overlay = document.getElementById('loadingOverlay');
+  var overlay = document.getElementById('loadingOverlay');
   if (overlay) overlay.style.display = 'none';
 }
 
 // ============================================================
 // AUTH STATE LISTENER
-// Fires when user logs in or out (even on page refresh)
+// Handles: owner login, staff login, page-refresh restore
 // ============================================================
 
 function initFirebaseAuth() {
-  onAuthStateChanged(auth, async (user) => {
+  auth.onAuthStateChanged(async function(user) {
+    var staffMode = DB.get('staff_mode', false);
+    var staffAcc  = DB.get('staff_account', null);
+
     if (user) {
-      // User is logged in
-      currentUID = user.uid;
-      await loadUserDataFromCloud();
-      initApp(); // defined in app.js
+      if (staffMode && staffAcc) {
+        // Staff Firebase account is signed in — show staff UI
+        initStaffSession(staffAcc);
+      } else {
+        // Owner login
+        currentUID = user.uid;
+        await loadUserDataFromCloud();
+        initApp();
+      }
+
     } else {
-      // Not logged in
-      currentUID = null;
-      Pages.show('loginPage');
+      // No Firebase session
+      if (staffMode && staffAcc) {
+        // Restore staff from localStorage (page refresh on same device)
+        initStaffSession(staffAcc);
+      } else {
+        currentUID = null;
+        Pages.show('loginPage');
+      }
     }
   });
 }
 
 // ============================================================
-// EXPORT — make available to app.js
+// EXPORT
 // ============================================================
 
 window.Firebase = {
-  register:         fbRegister,
-  login:            fbLogin,
-  logout:           fbLogout,
-  cloud:            Cloud,
-  getUID:           () => currentUID,
-  initAuth:         initFirebaseAuth,
-  showLoading:      showLoadingOverlay,
-  hideLoading:      hideLoadingOverlay,
+  // Owner
+  register:           fbRegister,
+  login:              fbLogin,
+  logout:             fbLogout,
 
-  // Look up staff credentials from the public staffAuth collection.
-  // Called when staff log in from the main portal on a device that
-  // doesn't have the owner's cached data.
-  fetchStaffAuth: async (phone) => {
-    let p = phone.replace(/\D/g, '');
-    if (p.startsWith('254')) p = p.slice(3);
-    if (p.startsWith('0'))   p = p.slice(1);
-    try {
-      const snap = await getDoc(doc(db, 'staffAuth', p));
-      return snap.exists() ? snap.data() : null;
-    } catch(e) {
-      console.error('[Firebase] fetchStaffAuth:', e);
-      return null;
-    }
-  },
+  // Staff
+  staffLogin:         fbStaffLogin,
+  createStaffAccount: createStaffAccount,
+  writeStaffAuth:     writeStaffAuth,
+  fetchStaffAuth:     fetchStaffAuth,
+
+  // Sync
+  cloud:              Cloud,
+
+  // Util
+  getUID:             function() { return currentUID; },
+  initAuth:           initFirebaseAuth,
+  showLoading:        showLoadingOverlay,
+  hideLoading:        hideLoadingOverlay,
 };

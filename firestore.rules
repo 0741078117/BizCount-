@@ -12,7 +12,6 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── Owner data — private, owner-only ──────────────────────
-    // Path: /users/{userId}/...
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
 
@@ -21,21 +20,20 @@ service cloud.firestore {
       }
     }
 
-    // ── Staff auth — public read, owner-only write ─────────────
-    // Path: /staffAuth/{ownerPhone}
-    // Contains ONLY: name, pin, ownerUID, updatedAt
-    // No financial data is stored here — safe to read publicly.
-    match /staffAuth/{ownerPhone} {
-      // Anyone can read (needed for staff login from any device)
+    // ── Staff auth — public read, authenticated owner write ────
+    // Contains: name, pin, staffUID, ownerUID, productsSnapshot, settingsSnapshot
+    // No payment or debt data is stored here — safe to read publicly.
+    match /staffAuth/{phoneKey} {
+      // Anyone can read (staff login on any device, no auth required)
       allow read: if true;
 
-      // Only the owner (authenticated + UID matches stored ownerUID) can write
-      allow write: if request.auth != null
-                   && request.auth.uid == resource.data.ownerUID;
-
-      // Allow first-time create by any authenticated user
-      // (owner creates their own staffAuth entry when saving staff account)
+      // Only authenticated users can write
+      // First create: any authenticated user (owner creating their staff doc)
       allow create: if request.auth != null;
+
+      // Updates: only the original owner (stored as ownerUID)
+      allow update, delete: if request.auth != null
+                            && request.auth.uid == resource.data.ownerUID;
     }
 
   }

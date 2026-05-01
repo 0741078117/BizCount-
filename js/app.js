@@ -1554,73 +1554,68 @@ function resetLoginTabs() {
   switchLoginRole('owner');
 }
 
-// ── Staff Portal Login ──────────────────────────────────────
+// ── Staff Portal Login ──────────────────────────────────────────────
+// Works on ANY device — no owner session needed.
 async function handleStaffPortalLogin() {
   const pinInput   = document.getElementById('staffPinPortal');
   const phoneInput = document.getElementById('staffShopPhone');
-  const enteredPin = pinInput ? pinInput.value.trim() : '';
+  const enteredPin = pinInput   ? pinInput.value.trim()   : '';
   const shopPhone  = phoneInput ? phoneInput.value.trim() : '';
 
   if (!enteredPin || enteredPin.length < 4) {
-    showToast('Enter your 4-digit Staff PIN.', 'error');
-    return;
+    showToast('Enter your 4-digit Staff PIN.', 'error'); return;
   }
 
-  // Mode 1: local cache (fast, works offline)
+  // Fast path: local cache (same device, works offline)
   const localAcc = Staff.getAccount();
-  if (localAcc && localAcc.pin) {
-    if (enteredPin === localAcc.pin) {
-      _doStaffLogin(localAcc);
-      return;
-    } else if (!shopPhone) {
-      showToast('Wrong PIN. Try again.', 'error');
-      return;
-    }
+  if (localAcc && localAcc.pin === enteredPin && !shopPhone) {
+    _doStaffLogin(localAcc); return;
   }
 
-  // Mode 2: cloud lookup via staffAuth collection
+  // Cloud path: shop phone + internet required
   if (!shopPhone) {
     showToast('Enter the shop phone number to continue.', 'error');
     document.getElementById('staffLoginHint').style.display = 'block';
     return;
   }
 
-  if (window.Firebase) {
-    showToast('Checking...', 'info');
-    try {
-      const result = await window.Firebase.fetchStaffAuth(shopPhone);
-      if (!result) {
-        showToast('Shop not found. Check the phone number.', 'error');
-        document.getElementById('staffLoginHint').style.display = 'block';
-        return;
-      }
-      if (enteredPin !== result.pin) {
-        showToast('Wrong PIN. Try again.', 'error');
-        return;
-      }
-      Staff.saveAccount({ name: result.name, pin: result.pin });
-      _doStaffLogin({ name: result.name, pin: result.pin });
-    } catch (e) {
-      console.error('[StaffPortalLogin]', e);
-      showToast('Could not reach server. Check your internet.', 'error');
-    }
-  } else {
-    showToast('No staff account found. Ask the owner to set one up first.', 'error');
-    document.getElementById('staffLoginHint').style.display = 'block';
+  if (!window.Firebase) {
+    showToast('Loading... Please wait a moment and try again.', 'info'); return;
   }
+
+  const result = await window.Firebase.staffLogin(shopPhone, enteredPin);
+
+  if (!result.ok) {
+    showToast(result.error, 'error');
+    document.getElementById('staffLoginHint').style.display = 'block';
+    return;
+  }
+
+  _doStaffLogin(result.staffData);
 }
 
 function _doStaffLogin(acc) {
+  Staff.saveAccount({ name: acc.name, pin: acc.pin });
   Staff.setStaffMode(true);
   Pages.show('staffAppPage');
   _setEl('staffNameBadge', acc.name);
   const settings = Data.getSettings();
   _setEl('staffShopName', settings.businessName || 'My Shop');
   renderStaffRecent();
-  document.getElementById('staffPinPortal').value = '';
-  showToast(`Welcome, ${acc.name}! 👷`, 'success');
+  const pinField = document.getElementById('staffPinPortal');
+  if (pinField) pinField.value = '';
+  showToast('Welcome, ' + acc.name + '! 👷', 'success');
 }
 
+// Restores staff session on page refresh (called by firebase.js)
+function initStaffSession(acc) {
+  Staff.setStaffMode(true);
+  Pages.show('staffAppPage');
+  _setEl('staffNameBadge', acc.name);
+  const settings = Data.getSettings();
+  _setEl('staffShopName', settings.businessName || 'My Shop');
+  renderStaffRecent();
+}
 // ============================================================
 // SAMPLE DATA (for demo/onboarding)
 // ============================================================
@@ -2407,32 +2402,52 @@ function saveStaffAccount() {
   if (!name) { showToast('Enter staff name.', 'error'); return; }
   if (!pin || pin.length < 4) { showToast('PIN must be 4 digits.', 'error'); return; }
   if (pin !== pin2) { showToast('PINs do not match.', 'error'); return; }
+
+  // Save locally
   Staff.saveAccount({ name, pin });
-  if (window.Firebase) window.Firebase.cloud.saveSettings({ ...Data.getSettings(), staffAccount: { name, pin } });
   closeModal('staffSetupModal');
   renderSettings();
-  showToast(`✅ Staff account for ${name} created!`, 'success');
+  showToast('Setting up staff access... please wait.', 'info');
+
+  // Create Firebase Auth account for staff + write staffAuth document
+  // so staff can log in on ANY device independently
+  if (window.Firebase) {
+    const user    = Data.getUser();
+    const ownerPhone = user ? user.phone : null;
+    if (ownerPhone) {
+      window.Firebase.createStaffAccount(ownerPhone, name, pin).then(function(res) {
+        const staffUID = res.ok ? res.staffUID : null;
+        return window.Firebase.writeStaffAuth(ownerPhone, name, pin, staffUID);
+      }).then(function() {
+        showToast('Staff account for ' + name + ' is ready! They can now log in on any device.', 'success');
+      }).catch(function(e) {
+        console.error('[saveStaffAccount]', e);
+        showToast('Staff saved locally. Cloud sync failed — check internet.', 'info');
+      });
+    } else {
+      showToast('Staff account saved. Log in as owner to enable cross-device access.', 'info');
+    }
+  }
 }
 
 function handleStaffLogin() {
-  const pin = document.getElementById('staffPinInput').value.trim();
+  const pin = document.getElementById('staffPinInput') ?
+              document.getElementById('staffPinInput').value.trim() : '';
   const acc = Staff.getAccount();
   if (!acc) { showToast('No staff account set up yet.', 'error'); return; }
   if (pin !== acc.pin) { showToast('Wrong PIN. Try again.', 'error'); return; }
-  Staff.setStaffMode(true);
-  Pages.show('staffAppPage');
-  _setEl('staffNameBadge', acc.name);
-  // Set shop name on staff login page
-  const settings = Data.getSettings();
-  _setEl('staffShopName', settings.businessName || 'My Shop');
-  renderStaffRecent();
-  showToast(`Welcome, ${acc.name}! 👷`, 'success');
+  _doStaffLogin(acc);
 }
 
 function staffLogout() {
   Staff.setStaffMode(false);
+  // Sign out of Firebase too (staff had their own Firebase Auth session)
+  if (window.Firebase && typeof firebase !== 'undefined' && firebase.auth) {
+    firebase.auth().signOut().catch(function() {});
+  }
   Pages.show('loginPage');
-  document.getElementById('staffPinInput').value = '';
+  const pinEl = document.getElementById('staffPinInput');
+  if (pinEl) pinEl.value = '';
 }
 
 function renderStaffRecent() {

@@ -1396,10 +1396,15 @@
   </div>
 </div>
 
-<!-- Firebase (loaded as ES module) -->
-<script type="module" src="js/firebase.js"></script>
+<!-- Firebase compat SDK — works from file:// and any browser -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<!-- App (must load after Firebase module registers window.Firebase) -->
+<!-- BizCount Firebase integration -->
+<script src="js/firebase.js"></script>
+
+<!-- App logic — loads after Firebase registers window.Firebase -->
 <script src="js/app.js" defer></script>
 
 </body>
