@@ -166,6 +166,8 @@ const Pages = {
     const page = document.getElementById(id);
     if (page) page.classList.add('active');
     Pages.current = id;
+    // Reset login tabs to Owner whenever login page is shown
+    if (id === 'loginPage' && typeof resetLoginTabs === 'function') resetLoginTabs();
   }
 };
 
@@ -1481,6 +1483,145 @@ function handleRegister() {
 }
 
 // ============================================================
+// LOGIN PAGE — OWNER / STAFF TAB TOGGLE
+// ============================================================
+
+// ============================================================
+// LOGIN PAGE — ROLE TOGGLE (Owner / Staff)
+// ============================================================
+
+// currentLoginRole tracks which panel is showing so resetLoginTabs
+// can restore it correctly after Pages.show('loginPage')
+let currentLoginRole = 'owner';
+
+function initLoginToggle() {
+  const ownerBtn = document.getElementById('roleOwnerBtn');
+  const staffBtn = document.getElementById('roleStaffBtn');
+  if (!ownerBtn || !staffBtn) return;
+
+  ownerBtn.addEventListener('click', function() { switchLoginRole('owner'); });
+  staffBtn.addEventListener('click', function() { switchLoginRole('staff'); });
+}
+
+function switchLoginRole(role) {
+  currentLoginRole = role;
+  const ownerBtn   = document.getElementById('roleOwnerBtn');
+  const staffBtn   = document.getElementById('roleStaffBtn');
+  const pill       = document.getElementById('rolePill');
+  const ownerPanel = document.getElementById('ownerPanel');
+  const staffPanel = document.getElementById('staffPanel');
+  if (!ownerBtn) return;
+
+  if (role === 'owner') {
+    ownerBtn.classList.add('active');
+    staffBtn.classList.remove('active');
+    pill.classList.remove('staff-active');
+    ownerPanel.classList.remove('hidden-panel');
+    staffPanel.classList.add('hidden-panel');
+    // Force re-run animation
+    ownerPanel.style.animation = 'none';
+    ownerPanel.offsetHeight; // reflow
+    ownerPanel.style.animation = '';
+  } else {
+    staffBtn.classList.add('active');
+    ownerBtn.classList.remove('active');
+    pill.classList.add('staff-active');
+    staffPanel.classList.remove('hidden-panel');
+    ownerPanel.classList.add('hidden-panel');
+    // Force re-run animation
+    staffPanel.style.animation = 'none';
+    staffPanel.offsetHeight;
+    staffPanel.style.animation = '';
+    // Pre-fill shop phone if owner cached on this device
+    const phoneField = document.getElementById('staffShopPhone');
+    if (phoneField && !phoneField.value) {
+      const cachedUser = DB.get('user', null);
+      if (cachedUser && cachedUser.phone) {
+        let p = (cachedUser.phone || '').replace(/\D/g, '');
+        if (p.startsWith('254')) p = p.slice(3);
+        if (p.startsWith('0'))   p = p.slice(1);
+        phoneField.value = p;
+      }
+    }
+    document.getElementById('staffPinPortal').value = '';
+    document.getElementById('staffLoginHint').style.display = 'none';
+  }
+}
+
+// Called by Pages.show — goes back to owner tab but keeps staff data clean
+function resetLoginTabs() {
+  currentLoginRole = 'owner';
+  switchLoginRole('owner');
+}
+
+// ── Staff Portal Login ──────────────────────────────────────
+async function handleStaffPortalLogin() {
+  const pinInput   = document.getElementById('staffPinPortal');
+  const phoneInput = document.getElementById('staffShopPhone');
+  const enteredPin = pinInput ? pinInput.value.trim() : '';
+  const shopPhone  = phoneInput ? phoneInput.value.trim() : '';
+
+  if (!enteredPin || enteredPin.length < 4) {
+    showToast('Enter your 4-digit Staff PIN.', 'error');
+    return;
+  }
+
+  // Mode 1: local cache (fast, works offline)
+  const localAcc = Staff.getAccount();
+  if (localAcc && localAcc.pin) {
+    if (enteredPin === localAcc.pin) {
+      _doStaffLogin(localAcc);
+      return;
+    } else if (!shopPhone) {
+      showToast('Wrong PIN. Try again.', 'error');
+      return;
+    }
+  }
+
+  // Mode 2: cloud lookup via staffAuth collection
+  if (!shopPhone) {
+    showToast('Enter the shop phone number to continue.', 'error');
+    document.getElementById('staffLoginHint').style.display = 'block';
+    return;
+  }
+
+  if (window.Firebase) {
+    showToast('Checking...', 'info');
+    try {
+      const result = await window.Firebase.fetchStaffAuth(shopPhone);
+      if (!result) {
+        showToast('Shop not found. Check the phone number.', 'error');
+        document.getElementById('staffLoginHint').style.display = 'block';
+        return;
+      }
+      if (enteredPin !== result.pin) {
+        showToast('Wrong PIN. Try again.', 'error');
+        return;
+      }
+      Staff.saveAccount({ name: result.name, pin: result.pin });
+      _doStaffLogin({ name: result.name, pin: result.pin });
+    } catch (e) {
+      console.error('[StaffPortalLogin]', e);
+      showToast('Could not reach server. Check your internet.', 'error');
+    }
+  } else {
+    showToast('No staff account found. Ask the owner to set one up first.', 'error');
+    document.getElementById('staffLoginHint').style.display = 'block';
+  }
+}
+
+function _doStaffLogin(acc) {
+  Staff.setStaffMode(true);
+  Pages.show('staffAppPage');
+  _setEl('staffNameBadge', acc.name);
+  const settings = Data.getSettings();
+  _setEl('staffShopName', settings.businessName || 'My Shop');
+  renderStaffRecent();
+  document.getElementById('staffPinPortal').value = '';
+  showToast(`Welcome, ${acc.name}! 👷`, 'success');
+}
+
+// ============================================================
 // SAMPLE DATA (for demo/onboarding)
 // ============================================================
 
@@ -2487,6 +2628,7 @@ function initApp() {
 
 document.addEventListener('DOMContentLoaded', () => {
   Pages.show('loginPage');
+  initLoginToggle(); // wire up the Owner/Staff role toggle
 
   const waitForFirebase = setInterval(() => {
     if (window.Firebase) {

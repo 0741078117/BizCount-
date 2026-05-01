@@ -276,6 +276,24 @@ const Cloud = {
     if (!currentUID) return;
     try {
       await updateDoc(profileDoc(), { settings });
+      // If settings include a staffAccount, mirror it to the public staffAuth collection
+      // so staff can log in from the main portal on any device
+      if (settings.staffAccount) {
+        const profileSnap = await getDoc(profileDoc());
+        const phone = profileSnap.exists() ? profileSnap.data().phone : null;
+        if (phone) {
+          let normalised = phone.replace(/\D/g, '');
+          if (normalised.startsWith('254')) normalised = normalised.slice(3);
+          if (normalised.startsWith('0'))   normalised = normalised.slice(1);
+          const staffAuthDoc = doc(db, 'staffAuth', normalised);
+          await setDoc(staffAuthDoc, {
+            name:     settings.staffAccount.name,
+            pin:      settings.staffAccount.pin,
+            ownerUID: currentUID,
+            updatedAt: serverTimestamp()
+          });
+        }
+      }
     } catch(e) { console.error('[Cloud] saveSettings:', e); }
   },
 
@@ -367,4 +385,20 @@ window.Firebase = {
   initAuth:         initFirebaseAuth,
   showLoading:      showLoadingOverlay,
   hideLoading:      hideLoadingOverlay,
+
+  // Look up staff credentials from the public staffAuth collection.
+  // Called when staff log in from the main portal on a device that
+  // doesn't have the owner's cached data.
+  fetchStaffAuth: async (phone) => {
+    let p = phone.replace(/\D/g, '');
+    if (p.startsWith('254')) p = p.slice(3);
+    if (p.startsWith('0'))   p = p.slice(1);
+    try {
+      const snap = await getDoc(doc(db, 'staffAuth', p));
+      return snap.exists() ? snap.data() : null;
+    } catch(e) {
+      console.error('[Firebase] fetchStaffAuth:', e);
+      return null;
+    }
+  },
 };

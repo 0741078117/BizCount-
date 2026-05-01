@@ -27,7 +27,6 @@
   <div class="auth-screen">
     <div class="auth-hero">
       <div class="auth-logo">
-        <!-- SVG Logo -->
         <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect width="44" height="44" rx="12" fill="#1A7A4A"/>
           <path d="M22 8C14.268 8 8 14.268 8 22C8 29.732 14.268 36 22 36C29.732 36 36 29.732 36 22C36 14.268 29.732 8 22 8Z" fill="white" fill-opacity="0.15"/>
@@ -42,25 +41,36 @@
 
     <div class="auth-card">
 
-      <!-- ── Login Type Toggle ── -->
-      <div class="login-toggle" id="loginToggle">
-        <button class="login-tab active" id="tabOwner" onclick="switchLoginTab('owner')">
-          👑 Owner
+      <!-- ══════════════════════════════════════════
+           ROLE SELECTOR — sliding pill toggle
+           ══════════════════════════════════════════ -->
+      <div class="role-toggle" id="roleToggle">
+        <!-- sliding background pill -->
+        <span class="role-pill" id="rolePill"></span>
+        <button type="button" class="role-btn active" id="roleOwnerBtn" data-role="owner">
+          <span class="role-icon">👑</span>
+          <span class="role-label">Owner</span>
         </button>
-        <button class="login-tab" id="tabStaff" onclick="switchLoginTab('staff')">
-          👷 Staff
+        <button type="button" class="role-btn" id="roleStaffBtn" data-role="staff">
+          <span class="role-icon">👷</span>
+          <span class="role-label">Staff</span>
         </button>
       </div>
 
-      <!-- ── OWNER LOGIN ── -->
-      <div id="ownerLoginForm">
-        <h2 style="margin-top:12px">Karibu! 👋</h2>
-        <p class="sub">Log in to manage your business</p>
+      <!-- ══════════════════════════════════════════
+           OWNER FORM
+           ══════════════════════════════════════════ -->
+      <div class="login-panel" id="ownerPanel">
+        <div class="login-panel-header">
+          <h2>Karibu! 👋</h2>
+          <p class="sub">Log in to manage your business</p>
+        </div>
 
         <div class="form-group">
           <label>Phone Number</label>
           <div class="input-icon-wrap mpesa-input-wrap">
-            <input type="tel" id="loginPhone" placeholder="7XX XXX XXX" inputmode="numeric" maxlength="9" />
+            <input type="tel" id="loginPhone" placeholder="7XX XXX XXX"
+                   inputmode="numeric" maxlength="9" />
           </div>
         </div>
 
@@ -68,11 +78,13 @@
           <label>Your PIN</label>
           <div class="input-icon-wrap">
             <span class="icon">🔒</span>
-            <input type="password" id="loginPin" placeholder="Enter 4-digit PIN" maxlength="4" inputmode="numeric" />
+            <input type="password" id="loginPin" placeholder="4-digit PIN"
+                   maxlength="4" inputmode="numeric"
+                   onkeydown="if(event.key==='Enter') handleLogin()" />
           </div>
         </div>
 
-        <button class="btn btn-primary" onclick="handleLogin()">
+        <button type="button" class="btn btn-primary btn-login-owner" onclick="handleLogin()">
           🚀 Login to My Business
         </button>
 
@@ -81,41 +93,44 @@
         </p>
       </div>
 
-      <!-- ── STAFF LOGIN ── -->
-      <div id="staffLoginForm" style="display:none">
-        <h2 style="margin-top:12px">Staff Access 👷</h2>
-        <p class="sub" id="staffLoginSubtitle">Enter your shop details to continue</p>
+      <!-- ══════════════════════════════════════════
+           STAFF FORM
+           ══════════════════════════════════════════ -->
+      <div class="login-panel hidden-panel" id="staffPanel">
+        <div class="login-panel-header">
+          <h2>Staff Access 👷</h2>
+          <p class="sub">Enter your shop details to clock in</p>
+        </div>
 
-        <div class="form-group" id="staffShopPhoneGroup">
+        <div class="form-group">
           <label>Shop Phone Number</label>
           <div class="input-icon-wrap mpesa-input-wrap">
-            <input type="tel" id="staffShopPhone" placeholder="Owner's phone: 7XX XXX XXX" inputmode="numeric" maxlength="9" />
+            <input type="tel" id="staffShopPhone" placeholder="Owner's number: 7XX XXX XXX"
+                   inputmode="numeric" maxlength="9" />
           </div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:4px;padding-left:2px">
-            Ask your employer for the shop phone number
-          </div>
+          <div class="field-hint">Ask your employer for the shop phone number</div>
         </div>
 
         <div class="form-group">
           <label>Your Staff PIN</label>
           <div class="input-icon-wrap">
             <span class="icon">🔒</span>
-            <input type="password" id="staffPinPortal" placeholder="Enter 4-digit PIN" maxlength="4" inputmode="numeric"
-              onkeydown="if(event.key==='Enter') handleStaffPortalLogin()" />
+            <input type="password" id="staffPinPortal" placeholder="4-digit PIN"
+                   maxlength="4" inputmode="numeric"
+                   onkeydown="if(event.key==='Enter') handleStaffPortalLogin()" />
           </div>
         </div>
 
-        <button class="btn btn-gold" onclick="handleStaffPortalLogin()" style="color:#fff">
+        <button type="button" class="btn btn-login-staff" onclick="handleStaffPortalLogin()">
           🚀 Enter Shop
         </button>
 
-        <div id="staffLoginHint" style="display:none;margin-top:12px;padding:10px 12px;background:var(--gold-light);border-radius:var(--radius-sm);font-size:0.78rem;color:var(--mid);line-height:1.5">
-          💡 <strong>Shop not found on this device?</strong><br>
-          Ask the owner to log in once on this device first, or enter the shop phone number above.
+        <div class="staff-login-hint" id="staffLoginHint" style="display:none">
+          💡 <strong>Not working?</strong> Ask the owner to log in on this device once, or check the shop phone number.
         </div>
       </div>
 
-    </div>
+    </div><!-- /auth-card -->
   </div>
 </div>
 
